@@ -1,0 +1,78 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum AttendanceStatus {
+  ON_TIME
+  LATE
+  ABSENT
+}
+
+model User {
+  id          Int          @id @default(autoincrement())
+  clerkId     String       @unique
+  email       String       @unique
+  name        String?
+  role        Role         @default(USER)
+  attendances Attendance[]
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Attendance {
+  id            Int              @id @default(autoincrement())
+  userId        Int
+  user          User             @relation(fields: [userId], references: [id])
+
+  date          DateTime         // normalize to start of day
+  status        AttendanceStatus @default(ON_TIME)
+
+  minutesLate   Int?             // only for LATE
+  minutesEarly  Int?             // optional
+
+  note          String?
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@unique([userId, date])
+  @@index([date, status])
+}
+
+// Kalo ada waktu
+
+// model Class {
+//   id        Int      @id @default(autoincrement())
+//   name      String
+//   createdAt DateTime @default(now())
+
+//   users      UserClass[]
+//   attendance Attendance[]
+// }
+
+// model UserClass {
+//   userId  Int
+//   classId Int
+
+//   user  User  @relation(fields: [userId], references: [id])
+//   class Class @relation(fields: [classId], references: [id])
+
+//   @@id([userId, classId])
+// }
