@@ -20,17 +20,26 @@ enum Role {
 
 enum AttendanceStatus {
   ON_TIME
+  ON_LEAVE
   LATE
   ABSENT
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 model User {
   id          Int          @id @default(autoincrement())
   clerkId     String       @unique
   email       String       @unique
-  name        String?
+  name        String
   role        Role         @default(USER)
+
   attendances Attendance[]
+  attendanceRequests AttendanceRequest[]
 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -40,6 +49,7 @@ model Attendance {
   id            Int              @id @default(autoincrement())
   userId        Int
   user          User             @relation(fields: [userId], references: [id])
+  attendanceRequests AttendanceRequest[]
 
   date          DateTime         // normalize to start of day
   status        AttendanceStatus @default(ON_TIME)
@@ -54,6 +64,24 @@ model Attendance {
 
   @@unique([userId, date])
   @@index([date, status])
+}
+
+model AttendanceRequest {
+  id            Int              @id @default(autoincrement())
+  attendanceId  Int
+  attendance    Attendance       @relation(fields: [attendanceId], references: [id])
+
+  studentId     Int
+  student       User             @relation(fields: [studentId], references: [id])
+
+  status        RequestStatus    @default(PENDING)
+  reason        String?
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([status])
+  @@index([studentId])
 }
 
 // Kalo ada waktu
