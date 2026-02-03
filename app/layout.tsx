@@ -2,10 +2,14 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-import { ClerkProvider, SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs'
+import { ClerkProvider} from '@clerk/nextjs'
 import { auth } from "@clerk/nextjs/server";
+import prisma from "@/lib/prisma";
+import { Toaster } from "@/components/ui/sonner"
 
 import Script from "next/script";
+import { NextResponse } from "next/server";
+import Header from "@/components/Landing/Header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,6 +32,31 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>
 ) {
+
+  const { userId } = await auth();
+
+  const user = await prisma.user.findUnique({
+    where: { clerkId: userId || undefined },
+  })
+
+  if (!user) {
+    return NextResponse.redirect('/login');
+  }
+
+  let userAttendanceRequests;
+
+  if (user.role === 'ADMIN') {
+    userAttendanceRequests = await prisma.attendanceRequest.findMany();
+  } else if (user.role === "USER") {
+    userAttendanceRequests = await prisma.attendanceRequest.findMany({
+      where: { studentId: user.id }
+    })
+  }
+
+  if (!userAttendanceRequests) {
+    return NextResponse.redirect('/login');
+  }
+
   return (
     <html lang="en">
       <ClerkProvider>
@@ -35,18 +64,9 @@ export default async function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          <header className="flex mx-auto max-w-7xl justify-between items-center p-5 border-b">
-            <div className=""></div>
-            <div className="flex items-center gap-8">
-              <i className="fas fa-envelope text-2xl cursor-pointer text-primary"></i>
-              <SignedIn>
-                <div className="scale-150">
-                  <UserButton />
-                </div>
-              </SignedIn>
-            </div>
-          </header>
+          <Header userAttendanceRequests={userAttendanceRequests} />
           {children}
+          <Toaster />
         </body>
       </ClerkProvider>
     </html>

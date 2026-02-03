@@ -1,11 +1,8 @@
 "use client";
-
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button"
 
-import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
@@ -24,24 +21,34 @@ import {
 
 import {
   Dialog,
+  DialogClose,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
 
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addDays, subDays } from "date-fns"
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay } from "date-fns"
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 import { useUser } from "@clerk/nextjs";
 
-export default function MainPage() {
+import { toast } from "sonner"
+
+export default function MainPage({ userRole }: { userRole: string }) {
 
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [eventType, setEventType] = useState<string>("");
+
+  const [reason, setReason] = useState<string>("");
   const [events, setEvents] = useState();
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
+
+  const dialogCloseRef = useRef<HTMLButtonElement>(null);
 
   const user = useUser();
 
@@ -76,21 +83,74 @@ export default function MainPage() {
 
   async function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault();
+    setErrors({});
+    setIsLoading(true);
 
-    // API call
+    const newErrors: Record<string, string> = {};
+
+    if (!eventType) {
+      newErrors.eventType = "Please select an event type";
+    }
+
+    if (!selectedDate) {
+      newErrors.date = "Please select a date";
+      setIsLoading(false);
+      toast.error("Please select a date");
+      return;
+    }
+
+    if (eventType === "ON_LEAVE" && (!reason || reason.length < 8)) {
+      newErrors.reason = "Your reason must be at least 8 characters";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setIsLoading(false);
+
+      // Show error toast
+      toast.error(Object.values(newErrors)[0]);
+      return;
+    }
+
+    let errorMessage = "Event creation failed, please try again.";
+
     try {
-      const response = await fetch('api/event/add');
+      const response = await fetch('/api/event/create', {
+        method: "POST",
+        body: JSON.stringify({
+          date: selectedDate.toISOString(),
+          eventType,
+          reason: reason || ""
+        })
+      });
+
+      const data = await response.json();
 
       if (response.ok) {
-        router.refresh();
-      } else {
+        // Show success toast
+        toast.success(data.message || (userRole === "ADMIN" ? "Event created successfully" : "Request submitted successfully"));
 
+        // Close dialog and refresh
+        setEventType("");
+        setReason("");
+        setSelectedDate(undefined);
+        dialogCloseRef.current?.click();
+        router.refresh();
+
+      } else {
+        // Show error toast
+        toast.error(data.message || errorMessage);
+        setErrors({ submit: data.message ?? errorMessage });
       }
 
     } catch (error) {
+      console.error("Full error:", error);
 
+      // Show error toast
+      toast.error(errorMessage);
+      setErrors({ submit: errorMessage });
     } finally {
-
+      setIsLoading(false);
     }
   }
 
@@ -264,7 +324,10 @@ export default function MainPage() {
                     <td key={dayIndex} className="h-24 border border-gray-200 p-0">
                       <Dialog>
                         <DialogTrigger asChild>
-                          <div className="h-full w-full p-3 cursor-pointer hover:bg-gray-50 transition-colors">
+                          <div
+                            className="h-full w-full p-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                            onClick={() => setSelectedDate(dayData)}
+                          >
                             <div className="flex justify-between items-start mb-2">
                               <span className="text-sm font-medium text-gray-700">
                                 {format(dayData, 'd')}
@@ -283,28 +346,48 @@ export default function MainPage() {
                             <DialogTitle>{format(dayData, 'EEEE, MMMM d, yyyy')}</DialogTitle>
                           </DialogHeader>
 
-                          <form className="grid" onSubmit={handleSubmit}>
-                            <label className="font-semibold">Select Event Type</label>
-                            <Select value={eventType} onValueChange={(value) => {setEventType(value)}}>
-                              <SelectTrigger className="w-full mt-2 mb-4">
-                                <SelectValue placeholder="Select event type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem onSelect={() => setEventType("present")} value="present">Present</SelectItem>
-                                <SelectItem onSelect={() => setEventType("late")} value="late">Late Entry</SelectItem>
-                                <SelectItem onSelect={() => setEventType("on_leave")} value="on_leave">On Leave</SelectItem>
-                                <SelectItem onSelect={() => setEventType("absent")} value="absent">Absent</SelectItem>
-                              </SelectContent>
-                            </Select>
+                          <form className="grid gap-4" onSubmit={handleSubmit}>
+                            <div>
+                              <label className="font-semibold">Select Event Type</label>
+                              <Select value={eventType} onValueChange={(value) => { setEventType(value) }}>
+                                <SelectTrigger className="w-full mt-2">
+                                  <SelectValue placeholder="Select event type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="ON_TIME">Present</SelectItem>
+                                  <SelectItem value="LATE">Late Entry</SelectItem>
+                                  <SelectItem value="ON_LEAVE">On Leave</SelectItem>
+                                  <SelectItem value="ABSENT">Absent</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              {errors.eventType && (
+                                <p className="text-sm text-red-500 mt-1">{errors.eventType}</p>
+                              )}
+                            </div>
 
-                            {eventType == "on_leave" && (
-                              <Textarea className="mb-4" placeholder="Reason"></Textarea>
+                            {eventType === "ON_LEAVE" && (
+                              <div>
+                                <Textarea
+                                  value={reason}
+                                  onChange={(e) => setReason(e.target.value)}
+                                  placeholder="Reason for leave (minimum 8 characters)"
+                                />
+                                {errors.reason && (
+                                  <p className="text-sm text-red-500 mt-1">{errors.reason}</p>
+                                )}
+                              </div>
                             )}
 
-                            <Button type="submit" className="w-max justify-self-start">
-                              {/* {eventType == "on_leave" ? "Request" : "Save"} */}
-                              Request
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button type="submit" disabled={isLoading}>
+                                {isLoading ? "Saving..." : (userRole === "ADMIN" ? "Save" : "Request")}
+                              </Button>
+                              <DialogClose asChild>
+                                <Button type="button" variant="outline" ref={dialogCloseRef}>
+                                  Cancel
+                                </Button>
+                              </DialogClose>
+                            </div>
                           </form>
 
                         </DialogContent>

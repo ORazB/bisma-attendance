@@ -85,6 +85,7 @@ export default function RegisterForm() {
           identifier: email,
           password,
         });
+        
         console.log("SignIn Attempt:", signInAttempt);
       
         if (signInAttempt.status === "complete" && signInAttempt.createdSessionId) {
