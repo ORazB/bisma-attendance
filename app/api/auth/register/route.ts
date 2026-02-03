@@ -25,11 +25,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email },
-        ]
-      }
+      where: {email: email}
     })
 
     if (existingUser) {
@@ -60,7 +56,6 @@ export async function POST(request: NextRequest) {
       await client.users.deleteUser(clerkUser.id);
       
       return NextResponse.json({ message: "Failed to create user in database."}, { status: 500 });
-
     }
 
     return NextResponse.json({ message: "User registered successfully."}, { status: 201 });
