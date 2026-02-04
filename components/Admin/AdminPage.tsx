@@ -10,14 +10,22 @@ import {
   PopoverTrigger
 } from "@/components/ui/popover";
 
-import { startOfWeek, endOfWeek, format, eachDayOfInterval } from "date-fns"
+import { startOfWeek, endOfWeek, format, eachDayOfInterval, isWithinInterval } from "date-fns"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 import { useUser } from "@clerk/nextjs";
 
-export default function AdminPage() {
+import { Attendance } from "@/app/generated/prisma";
+import { User } from "@/app/generated/prisma";
 
+interface AdminPageProps {
+  users: User[];
+  userAttendance: Attendance[];
+  userImages: Record<string, string>;
+}
+
+export default function AdminPage({ users, userAttendance, userImages }: AdminPageProps) {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [week, setWeek] = useState<{ from: Date; to: Date } | null>(null);
 
@@ -52,110 +60,79 @@ export default function AdminPage() {
     })
     : []
 
+  // Calculate attendance statistics for the selected week
+  const weekStats = useMemo(() => {
+    if (!week) return { present: 0, late: 0, onLeave: 0, absent: 0 };
+
+    const weekAttendance = userAttendance.filter((attendance) => {
+      const attendanceDate = new Date(attendance.date);
+      return isWithinInterval(attendanceDate, { start: week.from, end: week.to });
+    });
+
+    const stats = {
+      present: 0,
+      late: 0,
+      onLeave: 0,
+      absent: 0,
+    };
+
+    weekAttendance.forEach((attendance) => {
+      switch (attendance.status) {
+        case 'ON_TIME':
+          stats.present++;
+          break;
+        case 'LATE':
+          stats.late++;
+          break;
+        case 'ON_LEAVE':
+          stats.onLeave++;
+          break;
+        case 'ABSENT':
+          stats.absent++;
+          break;
+      }
+    });
+
+    return stats;
+  }, [week, userAttendance]);
+
+  const totalUsers = users.length;
+  const totalPossibleAttendance = totalUsers * weekDays.length;
+
   function AttendanceBadge({ record }: { record: any }) {
     const statusStyles = {
-      PRESENT: "bg-green-100 text-green-800 border-green-200",
-      ABSENT: "bg-red-100 text-red-800 border-red-200",
-      LEAVE: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      ON_TIME: "bg-green-100 text-green-800 border-green-200",
+      ON_LEAVE: "bg-red-100 text-red-800 border-red-200",
+      LATE: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      ABSENT: "bg-yellow-100 text-yellow-800 border-yellow-200",
     }
 
     const statusIcons = {
-      PRESENT: "fa-check",
+      ON_TIME: "fa-check",
       ABSENT: "fa-times",
-      LEAVE: "fa-calendar",
+      ON_LEAVE: "fa-calendar",
+      LATE: "fa-clock",
     }
 
     return (
       <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-xs font-medium ${statusStyles[record.status as keyof typeof statusStyles]}`}>
         <i className={`fa-solid ${statusIcons[record.status as keyof typeof statusIcons]}`}></i>
         <span>{record.status}</span>
-        {record.hoursWorked && (
-          <span className="text-xs opacity-75">({record.hoursWorked}h)</span>
-        )}
       </div>
     )
   }
 
-  const employees = [
-    {
-      id: 1,
-      name: "Dianne Russell",
-      role: "UI/UX Designer",
-      avatar: "https://i.pravatar.cc/150?img=32",
-    },
-    {
-      id: 2,
-      name: "Bessie Cooper",
-      role: "Product Designer",
-      avatar: "https://i.pravatar.cc/150?img=12",
-    },
-    {
-      id: 3,
-      name: "Brooklyn Jones",
-      role: "Marketing Officer",
-      avatar: "https://i.pravatar.cc/150?img=45",
-    },
-    {
-      id: 4,
-      name: "Eleanor Pena",
-      role: "Content Writer",
-      avatar: "https://i.pravatar.cc/150?img=56",
-    },
-    {
-      id: 5,
-      name: "Darlene Robertson",
-      role: "UX Engineer",
-      avatar: "https://i.pravatar.cc/150?img=23",
-    },
-  ];
-
-  const attendanceRecords = [
-    {
-      employeeId: 1,
-      date: "2026-02-03",
-      status: "PRESENT",
-      hoursWorked: 8,
-    },
-    {
-      employeeId: 1,
-      date: "2026-02-05",
-      status: "LEAVE",
-    },
-    {
-      employeeId: 2,
-      date: "2026-02-04",
-      status: "ABSENT",
-    },
-    {
-      employeeId: 3,
-      date: "2026-02-06",
-      status: "PRESENT",
-      hoursWorked: 7.5,
-    },
-    {
-      employeeId: 4,
-      date: "2026-02-03",
-      status: "PRESENT",
-      hoursWorked: 8.25,
-    },
-    {
-      employeeId: 5,
-      date: "2026-02-04",
-      status: "LEAVE",
-    },
-  ]
-
   const attendanceMap = new Map<string, any>()
 
-  attendanceRecords.forEach((a) => {
-    const key = `${a.employeeId}-${a.date}`
-    attendanceMap.set(key, a)
+  userAttendance.forEach((attendance) => {
+    const key = `${attendance.userId}-${attendance.date.toISOString().split('T')[0]}`
+    attendanceMap.set(key, attendance)
   })
+  console.log(attendanceMap);
 
   function getAttendance(userId: number, day: Date) {
-    return attendanceMap.get(
-      `${userId}-${format(day, "yyyy-MM-dd")}`
-    )
+    const key = `${userId}-${format(day, "yyyy-MM-dd")}`;
+    return attendanceMap.get(key);
   }
 
   return (
@@ -184,10 +161,10 @@ export default function AdminPage() {
               <div className="flex items-center justify-center w-10 h-10 bbg-gray-300-50 border border-gray-400 rounded-md">
                 <i className="fa fa-clock text-gray-700"></i>
               </div>
-              <h2 className="text-base font-semibold text-gray-700">Present Today</h2>
+              <h2 className="text-base font-semibold text-gray-700">Present</h2>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">24</h1>
-            <p className="text-sm text-gray-500">124 Students remaining</p>
+            <h1 className="text-3xl font-bold text-gray-900">{weekStats.present}</h1>
+            <p className="text-sm text-gray-500">{totalPossibleAttendance - weekStats.present} records remaining</p>
           </div>
 
           <div className="flex flex-col gap-3 p-4 bg-white border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-shadow">
@@ -197,8 +174,8 @@ export default function AdminPage() {
               </div>
               <h2 className="text-base font-semibold text-gray-700">Late Entry</h2>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">24</h1>
-            <p className="text-sm text-gray-500">12 People on time</p>
+            <h1 className="text-3xl font-bold text-gray-900">{weekStats.late}</h1>
+            <p className="text-sm text-gray-500">{weekStats.present} on time</p>
           </div>
 
           <div className="flex flex-col gap-3 p-4 bg-white border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-shadow">
@@ -208,7 +185,7 @@ export default function AdminPage() {
               </div>
               <h2 className="text-base font-semibold text-gray-700">On Leave</h2>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">24</h1>
+            <h1 className="text-3xl font-bold text-gray-900">{weekStats.onLeave}</h1>
             <p className="text-sm text-gray-500">Approved leave</p>
           </div>
 
@@ -219,7 +196,7 @@ export default function AdminPage() {
               </div>
               <h2 className="text-base font-semibold text-gray-700">Absent</h2>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">24</h1>
+            <h1 className="text-3xl font-bold text-gray-900">{weekStats.absent}</h1>
             <p className="text-sm text-gray-500">Without informing</p>
           </div>
 
@@ -271,27 +248,27 @@ export default function AdminPage() {
               </thead>
 
               <tbody>
-                {employees.map((employee) => (
-                  <tr key={employee.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                {users.map((user) => (
+                  <tr key={user.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
                     {/* Employee column */}
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
                         <img
-                          src={employee.avatar}
-                          alt={employee.name}
+                          src={userImages[user.clerkId]}
+                          alt={user.name}
                           className="w-10 h-10 rounded-full object-cover"
                         />
                         <div>
-                          <div className="font-medium text-gray-900">{employee.name}</div>
+                          <div className="font-medium text-gray-900">{user.name}</div>
                           <div className="text-sm text-gray-500">
-                            {employee.role}
+                            {user.role}
                           </div>
                         </div>
                       </div>
                     </td>
 
                     {weekDays.map((day) => {
-                      const record = getAttendance(employee.id, day)
+                      const record = getAttendance(user.id, day)
 
                       return (
                         <td key={day.toISOString()} className="text-center border-l border-gray-200 p-4 min-w-35">

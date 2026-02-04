@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-import { ClerkProvider} from '@clerk/nextjs'
+import { ClerkProvider } from '@clerk/nextjs'
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { Toaster } from "@/components/ui/sonner"
@@ -10,6 +10,8 @@ import { Toaster } from "@/components/ui/sonner"
 import Script from "next/script";
 import { NextResponse } from "next/server";
 import Header from "@/components/Landing/Header";
+
+import { redirect } from "next/navigation";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,26 +37,28 @@ export default async function RootLayout({
 
   const { userId } = await auth();
 
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId || undefined },
-  })
-
-  if (!user) {
-    return NextResponse.redirect('/login');
-  }
-
-  let userAttendanceRequests;
-
-  if (user.role === 'ADMIN') {
-    userAttendanceRequests = await prisma.attendanceRequest.findMany();
-  } else if (user.role === "USER") {
-    userAttendanceRequests = await prisma.attendanceRequest.findMany({
-      where: { studentId: user.id }
+  
+  let user;
+  if (userId) {
+    user = await prisma.user.findUnique({
+      where: { clerkId: userId || undefined },
     })
   }
 
-  if (!userAttendanceRequests) {
-    return NextResponse.redirect('/login');
+  // if (!user) {
+  //   return redirect('/register');
+  // }
+
+  let userAttendanceRequests;
+
+  if (user) {
+    if (user.role === 'ADMIN') {
+      userAttendanceRequests = await prisma.attendanceRequest.findMany();
+    } else if (user.role === "USER") {
+      userAttendanceRequests = await prisma.attendanceRequest.findMany({
+        where: { studentId: user.id }
+      })
+    }
   }
 
   return (
@@ -64,7 +68,9 @@ export default async function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          <Header userAttendanceRequests={userAttendanceRequests} />
+          {userAttendanceRequests && (
+            <Header userAttendanceRequests={userAttendanceRequests} />
+          )}
           {children}
           <Toaster />
         </body>
