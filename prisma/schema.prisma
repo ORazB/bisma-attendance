@@ -25,6 +25,12 @@ enum AttendanceStatus {
   ABSENT
 }
 
+enum AttendanceRequestType {
+  CREATE
+  UPDATE
+  DELETE
+}
+
 enum RequestStatus {
   PENDING
   APPROVED
@@ -77,7 +83,8 @@ model AttendanceRequest {
   status             RequestStatus @default(PENDING)
 
   requestedEventType AttendanceStatus
-  requestedDate     DateTime
+  requestedDate      DateTime
+  requestType        AttendanceRequestType
 
   reason             String?
 

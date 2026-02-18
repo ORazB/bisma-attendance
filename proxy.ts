@@ -10,24 +10,24 @@ const isPublicRoute = createRouteMatcher(['/register', '/login', '/api(.*)']);
 export default clerkMiddleware(async (auth, req) => {
   const { userId } = await auth();
 
-  if (isPublicRoute(req)) return NextResponse.next();
-  
-  if (!userId) return NextResponse.redirect(new URL('/register', req.url));
+  if (!isPublicRoute(req)) {
+    if (!userId) return NextResponse.redirect(new URL('/register', req.url));
 
-  const user = await prisma.user.findUnique({
-    where: {clerkId: userId}
-  })
-  
-  if (!user) {
-    return NextResponse.redirect(new URL('/register', req.url));
-  }
-  
-  if (isAdminRoute(req)) {
-    if (user.role !== Role.ADMIN) {
-      return new NextResponse("Forbidden", { status: 403 });
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId }
+    });
+
+    if (!user) {
+      return NextResponse.redirect(new URL('/register', req.url));
+    }
+
+    if (isAdminRoute(req)) {
+      if (user.role !== Role.ADMIN) {
+        return new NextResponse("Forbidden", { status: 403 });
+      }
     }
   }
-
+  return NextResponse.next();
 });
 
 export const config = {

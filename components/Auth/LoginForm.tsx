@@ -18,6 +18,8 @@ import { useSignIn } from '@clerk/nextjs'
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { useUser } from "@clerk/nextjs";
+
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -27,6 +29,11 @@ export default function LoginForm() {
 
   const router = useRouter();
   const { signIn, setActive } = useSignIn();
+  
+  const { isSignedIn, user, isLoaded } = useUser();
+  if (!isLoaded) return <div>Loading...</div>;
+  
+  console.log(user);
 
   const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
@@ -75,12 +82,18 @@ export default function LoginForm() {
         router.push("/");
       } else if (signInAttempt.status === "needs_second_factor") {
 
-        // show 2FA input to the user
+        // show 2FA error message to the user
         setErrors({ submit: "Please complete two-factor authentication to sign in." });
       }
 
-    } catch (error) {
-      setErrors({ submit: errorMessage });
+    } catch (err: any) {
+      console.error("Clerk error:", err);
+    
+      if (err?.errors?.[0]?.message) {
+        setErrors({ submit: err.errors[0].message });
+      } else {
+        setErrors({ submit: "Something went wrong. Please try again." });
+      }
     } finally {
       setIsLoading(false);
     }

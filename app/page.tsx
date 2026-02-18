@@ -6,7 +6,6 @@ import { redirect } from "next/navigation";
 
 export default async function Home() {
   const { userId } = await auth();
-
   if (!userId) return redirect("/login");
 
   const user = await prisma.user.findUnique({
@@ -16,15 +15,18 @@ export default async function Home() {
   if (!user) return redirect("/login");
 
   if (user.role === "USER") {
-    return <MainPage userRole={user.role} />;
+    const userAttendance = await prisma.attendance.findMany({
+      where: { userId: user.id }
+    });
+
+    return <MainPage userRole={user.role} userAttendance={userAttendance} />;
   }
 
   const userAttendance = await prisma.attendance.findMany();
   const users = await prisma.user.findMany();
+
   const userImageMap: Record<string, string> = {};
-
   const clerkIds = users.map(u => u.clerkId);
-
   const client = await clerkClient();
   const response = await client.users.getUserList({
     userId: clerkIds,
