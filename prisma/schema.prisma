@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../app/generated/prisma"
@@ -20,9 +17,9 @@ enum Role {
 
 enum AttendanceStatus {
   ON_TIME
-  ON_LEAVE
   LATE
   ABSENT
+  ON_LEAVE
 }
 
 enum RequestStatus {
@@ -38,6 +35,9 @@ model User {
   name    String
   role    Role   @default(USER)
 
+  classId Int   @unique
+  class   Class @relation(fields: [classId], references: [id])
+
   attendances        Attendance[]
   attendanceRequests AttendanceRequest[]
 
@@ -45,19 +45,27 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
+model Class {
+  id   Int    @id @default(autoincrement())
+  name String
+  user User?  @relation
+
+  createdAt DateTime @default(now())
+}
+
 model Attendance {
-  id                 Int                 @id @default(autoincrement())
-  userId             Int
-  user               User                @relation(fields: [userId], references: [id])
-  attendanceRequests AttendanceRequest[]
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
 
-  date   DateTime // normalize to start of day
+  date   DateTime
   status AttendanceStatus @default(ON_TIME)
+  note   String?
 
-  // minutesLate   Int?             // only for LATE
-  // minutesEarly  Int?             // optional
+  // minutesLate  Int?   // only relevant when status = LATE
+  // minutesEarly Int?   // if needed later
 
-  note String?
+  attendanceRequests AttendanceRequest[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -67,18 +75,17 @@ model Attendance {
 }
 
 model AttendanceRequest {
-  id           Int         @id @default(autoincrement())
+  id Int @id @default(autoincrement())
+
   attendanceId Int?
   attendance   Attendance? @relation(fields: [attendanceId], references: [id])
 
   studentId Int
   student   User @relation(fields: [studentId], references: [id])
 
-  status             RequestStatus @default(PENDING)
-
+  status             RequestStatus    @default(PENDING)
   requestedEventType AttendanceStatus
-  requestedDate     DateTime
-
+  requestedDate      DateTime
   reason             String?
 
   createdAt DateTime @default(now())
@@ -87,24 +94,3 @@ model AttendanceRequest {
   @@index([status])
   @@index([studentId])
 }
-
-// Kalo ada waktu
-
-// model Class {
-//   id        Int      @id @default(autoincrement())
-//   name      String
-//   createdAt DateTime @default(now())
-
-//   users      UserClass[]
-//   attendance Attendance[]
-// }
-
-// model UserClass {
-//   userId  Int
-//   classId Int
-
-//   user  User  @relation(fields: [userId], references: [id])
-//   class Class @relation(fields: [classId], references: [id])
-
-//   @@id([userId, classId])
-// }
