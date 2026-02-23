@@ -90,6 +90,14 @@ export default function Header({ userAttendanceRequests }: { userAttendanceReque
                             {request.status}
                           </span>
                         </div>
+                        
+                        <div className="flex items-center gap-2 mb-1">
+                          <i className="fas fa-exchange-alt text-primary text-xs"></i>
+                          <span className="text-xs font-medium">
+                            {request.requestType}
+                          </span>
+                        </div>
+                        
                       </div>
                     </DialogTrigger>
                     <DialogContent className="w-64">
@@ -100,6 +108,13 @@ export default function Header({ userAttendanceRequests }: { userAttendanceReque
                           <i className="fas fa-calendar-day text-primary"></i>
                           <span className="font-semibold text-sm">
                             {new Date(request.requestedDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 mb-2">
+                          <i className="fas fa-random text-primary"></i>
+                          <span className="font-semibold text-sm">
+                            {request.requestType} Request
                           </span>
                         </div>
 

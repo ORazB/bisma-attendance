@@ -40,6 +40,7 @@ export default async function RootLayout({
   
   let user;
   if (userId) {
+    console.log(userId);
     user = await prisma.user.findUnique({
       where: { clerkId: userId || undefined },
     })

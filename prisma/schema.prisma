@@ -22,6 +22,12 @@ enum AttendanceStatus {
   ON_LEAVE
 }
 
+enum AttendanceRequestType {
+  CREATE
+  UPDATE
+  DELETE
+}
+
 enum RequestStatus {
   PENDING
   APPROVED

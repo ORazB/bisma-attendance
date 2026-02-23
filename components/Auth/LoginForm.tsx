@@ -28,6 +28,11 @@ export default function LoginForm() {
 
   const router = useRouter();
   const { signIn, setActive } = useSignIn();
+  
+  const { isSignedIn, user, isLoaded } = useUser();
+  if (!isLoaded) return <div>Loading...</div>;
+  
+  console.log(user);
 
   const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();

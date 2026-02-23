@@ -1,12 +1,12 @@
 "use client";
 import { useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger
+  PopoverTrigger,
 } from "@/components/ui/popover";
 
 import { Textarea } from "@/components/ui/textarea";
@@ -17,7 +17,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 
 import {
   Dialog,
@@ -26,29 +26,82 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay } from "date-fns"
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  getDay,
+} from "date-fns";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 
 import { useUser } from "@clerk/nextjs";
 
-import { toast } from "sonner"
+import { toast } from "sonner";
 
-export default function MainPage({ userRole }: { userRole: string }) {
+import { Attendance } from "@/app/generated/prisma";
 
+interface MainPageProps {
+  userRole: string;
+  userAttendance: Attendance[];
+}
+
+function AttendanceBadge({ record }: { record: Attendance }) {
+  const statusStyles = {
+    ON_TIME: "bg-green-100 text-green-800 border-green-200",
+    ON_LEAVE: "bg-red-100 text-red-800 border-red-200",
+    LATE: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    ABSENT: "bg-orange-100 text-orange-800 border-orange-200",
+  };
+
+  const statusIcons = {
+    ON_TIME: "fa-check",
+    ABSENT: "fa-times",
+    ON_LEAVE: "fa-calendar",
+    LATE: "fa-clock",
+  };
+
+  const statusLabels = {
+    ON_TIME: "ON_TIME",
+    ABSENT: "ABSENT",
+    ON_LEAVE: "ON_LEAVE",
+    LATE: "LATE",
+  };
+
+  return (
+    <div
+      className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-xs font-medium ${
+        statusStyles[record.status as keyof typeof statusStyles]
+      }`}
+    >
+      <i
+        className={`fa-solid ${statusIcons[record.status as keyof typeof statusIcons]}`}
+      ></i>
+      <span>{statusLabels[record.status as keyof typeof statusLabels]}</span>
+    </div>
+  );
+}
+
+export default function MainPage({
+  userRole,
+  userAttendance = [],
+}: MainPageProps) {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [eventType, setEventType] = useState<string>("");
 
   const [reason, setReason] = useState<string>("");
-  const [events, setEvents] = useState();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
 
   const dialogCloseRef = useRef<HTMLButtonElement>(null);
+
+  const [selectedAttendance, setSelectedAttendance] =
+    useState<Attendance | null>(null);
 
   const user = useUser();
 
@@ -57,6 +110,28 @@ export default function MainPage({ userRole }: { userRole: string }) {
   if (user) {
     console.log("User info:", user);
   }
+
+  // Build attendance map for quick lookup
+  const attendanceMap = useMemo(() => {
+    const map = new Map<string, Attendance>();
+    userAttendance.forEach((attendance) => {
+      const key = format(new Date(attendance.date), "yyyy-MM-dd");
+      map.set(key, attendance);
+    });
+    return map;
+  }, [userAttendance]);
+
+  // Calculate overall stats from all attendance records
+  const stats = useMemo(() => {
+    const counts = { present: 0, late: 0, onLeave: 0, absent: 0 };
+    userAttendance.forEach((a) => {
+      if (a.status === "ON_TIME") counts.present++;
+      else if (a.status === "LATE") counts.late++;
+      else if (a.status === "ON_LEAVE") counts.onLeave++;
+      else if (a.status === "ABSENT") counts.absent++;
+    });
+    return counts;
+  }, [userAttendance]);
 
   // Generate calendar days for the selected month
   const getCalendarDays = () => {
@@ -79,9 +154,9 @@ export default function MainPage({ userRole }: { userRole: string }) {
   };
 
   const calendarDays = getCalendarDays();
-  const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-  async function handleSubmit(e: React.SubmitEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrors({});
     setIsLoading(true);
@@ -115,20 +190,30 @@ export default function MainPage({ userRole }: { userRole: string }) {
     let errorMessage = "Event creation failed, please try again.";
 
     try {
-      const response = await fetch('/api/event/create', {
+      const isEdit = !!selectedAttendance;
+
+      const response = await fetch("/api/event/create", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          attendanceId: selectedAttendance?.id ?? null,
+          requestType: isEdit ? "UPDATE" : "CREATE",
           date: selectedDate.toISOString(),
           eventType,
-          reason: reason || ""
-        })
+          reason: reason || "",
+        }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
         // Show success toast
-        toast.success(data.message || (userRole === "ADMIN" ? "Event created successfully" : "Request submitted successfully"));
+        toast.success(
+          data.message ||
+            (userRole === "ADMIN"
+              ? "Event created successfully"
+              : "Request submitted successfully"),
+        );
 
         // Close dialog and refresh
         setEventType("");
@@ -136,19 +221,51 @@ export default function MainPage({ userRole }: { userRole: string }) {
         setSelectedDate(undefined);
         dialogCloseRef.current?.click();
         router.refresh();
-
       } else {
         // Show error toast
         toast.error(data.message || errorMessage);
         setErrors({ submit: data.message ?? errorMessage });
       }
-
     } catch (error) {
       console.error("Full error:", error);
 
       // Show error toast
       toast.error(errorMessage);
       setErrors({ submit: errorMessage });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!selectedAttendance) return;
+
+    try {
+      setIsLoading(true);
+
+      const response = await fetch("/api/event/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          attendanceId: selectedAttendance.id,
+          requestType: "DELETE",
+          date: selectedAttendance.date, // ← ADD THIS
+          eventType: selectedAttendance.status, // ← ADD THIS
+          reason: "Delete request",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success(data.message || "Delete request submitted");
+        dialogCloseRef.current?.click();
+        router.refresh();
+      } else {
+        toast.error(data.message || "Delete failed");
+      }
+    } catch (error) {
+      toast.error("Something went wrong");
     } finally {
       setIsLoading(false);
     }
@@ -162,9 +279,7 @@ export default function MainPage({ userRole }: { userRole: string }) {
           <h1 className="text-3xl text-gray-800 font-semibold tracking-wide">
             Student Recap
           </h1>
-          <h3 className="text-lg text-gray-600">
-            Analyse your student recap
-          </h3>
+          <h3 className="text-lg text-gray-600">Analyse your student recap</h3>
         </div>
 
         <Button>
@@ -173,7 +288,6 @@ export default function MainPage({ userRole }: { userRole: string }) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-
         <div className="flex flex-col gap-3 p-4 bg-white border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-shadow">
           <div className="flex gap-3 items-center">
             <div className="flex items-center justify-center w-10 h-10 bbg-gray-300-50 border border-gray-400 rounded-md">
@@ -181,7 +295,7 @@ export default function MainPage({ userRole }: { userRole: string }) {
             </div>
             <h2 className="text-base font-semibold text-gray-700">Present</h2>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">24</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{stats.present}</h1>
           <p className="text-sm text-gray-500">Times you were present</p>
         </div>
 
@@ -190,9 +304,11 @@ export default function MainPage({ userRole }: { userRole: string }) {
             <div className="flex items-center justify-center w-10 h-10 bg-gray-300-50 border border-gray-400 rounded-md">
               <i className="fa fa-hourglass-end text-primary"></i>
             </div>
-            <h2 className="text-base font-semibold text-gray-700">Late Entry</h2>
+            <h2 className="text-base font-semibold text-gray-700">
+              Late Entry
+            </h2>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">24</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{stats.late}</h1>
           <p className="text-sm text-gray-500">Times you were late</p>
         </div>
 
@@ -203,7 +319,7 @@ export default function MainPage({ userRole }: { userRole: string }) {
             </div>
             <h2 className="text-base font-semibold text-gray-700">On Leave</h2>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">24</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{stats.onLeave}</h1>
           <p className="text-sm text-gray-500">Times you were on leave</p>
         </div>
 
@@ -214,10 +330,9 @@ export default function MainPage({ userRole }: { userRole: string }) {
             </div>
             <h2 className="text-base font-semibold text-gray-700">Absent</h2>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">24</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{stats.absent}</h1>
           <p className="text-sm text-gray-500">Times you were absent</p>
         </div>
-
       </div>
 
       <Popover>
@@ -241,7 +356,10 @@ export default function MainPage({ userRole }: { userRole: string }) {
                   Month
                 </label>
                 <Select
-                  value={date?.getMonth().toString() ?? new Date().getMonth().toString()}
+                  value={
+                    date?.getMonth().toString() ??
+                    new Date().getMonth().toString()
+                  }
                   onValueChange={(value) => {
                     const newDate = new Date(date ?? new Date());
                     newDate.setMonth(parseInt(value));
@@ -254,7 +372,9 @@ export default function MainPage({ userRole }: { userRole: string }) {
                   <SelectContent>
                     {Array.from({ length: 12 }, (_, i) => (
                       <SelectItem key={i} value={i.toString()}>
-                        {new Date(2000, i).toLocaleString('default', { month: 'long' })}
+                        {new Date(2000, i).toLocaleString("default", {
+                          month: "long",
+                        })}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -266,7 +386,10 @@ export default function MainPage({ userRole }: { userRole: string }) {
                   Year
                 </label>
                 <Select
-                  value={date?.getFullYear().toString() ?? new Date().getFullYear().toString()}
+                  value={
+                    date?.getFullYear().toString() ??
+                    new Date().getFullYear().toString()
+                  }
                   onValueChange={(value) => {
                     const newDate = new Date(date ?? new Date());
                     newDate.setFullYear(parseInt(value));
@@ -295,113 +418,186 @@ export default function MainPage({ userRole }: { userRole: string }) {
 
       {/* Calendar Grid */}
       <div className="mt-6 border border-gray-300 rounded-lg overflow-hidden">
-        <table className="w-full">
+        <table className="w-full table-fixed">
           <thead>
             <tr className="bg-gray-50">
               {weekDays.map((day) => (
-                <th key={day} className="py-3 px-4 text-center font-semibold text-gray-700 border-r border-gray-200 last:border-r-0">
+                <th
+                  key={day}
+                  className="py-3 px-4 text-center font-semibold text-gray-700 border-r border-gray-200 last:border-r-0"
+                >
                   {day}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {Array.from({ length: Math.ceil(calendarDays.length / 7) }).map((_, weekIndex) => (
-              <tr key={weekIndex}>
-                {Array.from({ length: 7 }).map((_, dayIndex) => {
-                  const dayData = calendarDays[weekIndex * 7 + dayIndex];
+            {Array.from({ length: Math.ceil(calendarDays.length / 7) }).map(
+              (_, weekIndex) => (
+                <tr key={weekIndex}>
+                  {Array.from({ length: 7 }).map((_, dayIndex) => {
+                    const dayData = calendarDays[weekIndex * 7 + dayIndex];
 
-                  if (!dayData) {
+                    if (!dayData) {
+                      return (
+                        <td
+                          key={dayIndex}
+                          className="h-24 border border-gray-200 p-3 bg-gray-50/50"
+                        />
+                      );
+                    }
+
+                    const dateKey = format(dayData, "yyyy-MM-dd");
+                    const attendanceRecord = attendanceMap.get(dateKey);
+
                     return (
                       <td
                         key={dayIndex}
-                        className="h-24 border border-gray-200 p-3 bg-gray-50/50"
-                      />
-                    );
-                  }
+                        className="h-24 border border-gray-200 p-0 overflow-hidden align-top"
+                      >
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <div
+                              className="h-24 w-full p-3 cursor-pointer hover:bg-gray-50 transition-colors flex flex-col"
+                              onClick={() => {
+                                setSelectedDate(dayData);
 
-                  return (
-                    <td key={dayIndex} className="h-24 border border-gray-200 p-0">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <div
-                            className="h-full w-full p-3 cursor-pointer hover:bg-gray-50 transition-colors"
-                            onClick={() => setSelectedDate(dayData)}
-                          >
-                            <div className="flex justify-between items-start mb-2">
-                              <span className="text-sm font-medium text-gray-700">
-                                {format(dayData, 'd')}
-                              </span>
-                              {format(dayData, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') && (
-                                <span className="w-2 h-2 bg-primary rounded-full"></span>
-                              )}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {/* Attendance badge/status */}
-                            </div>
-                          </div>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>{format(dayData, 'EEEE, MMMM d, yyyy')}</DialogTitle>
-                          </DialogHeader>
+                                const dateKey = format(dayData, "yyyy-MM-dd");
+                                const record =
+                                  attendanceMap.get(dateKey) || null;
 
-                          <form className="grid gap-4" onSubmit={handleSubmit}>
-                            <div>
-                              <label className="font-semibold">Select Event Type</label>
-                              <Select value={eventType} onValueChange={(value) => { setEventType(value) }}>
-                                <SelectTrigger className="w-full mt-2">
-                                  <SelectValue placeholder="Select event type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="ON_TIME">Present</SelectItem>
-                                  <SelectItem value="LATE">Late Entry</SelectItem>
-                                  <SelectItem value="ON_LEAVE">On Leave</SelectItem>
-                                  <SelectItem value="ABSENT">Absent</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              {errors.eventType && (
-                                <p className="text-sm text-red-500 mt-1">{errors.eventType}</p>
-                              )}
-                            </div>
+                                setSelectedAttendance(record);
 
-                            {eventType === "ON_LEAVE" && (
-                              <div>
-                                <Textarea
-                                  value={reason}
-                                  onChange={(e) => setReason(e.target.value)}
-                                  placeholder="Reason for leave (minimum 8 characters)"
-                                />
-                                {errors.reason && (
-                                  <p className="text-sm text-red-500 mt-1">{errors.reason}</p>
+                                if (record) {
+                                  setEventType(record.status);
+                                } else {
+                                  setEventType("");
+                                }
+                              }}
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <span className="text-sm font-medium text-gray-700">
+                                  {format(dayData, "d")}
+                                </span>
+                                {format(dayData, "yyyy-MM-dd") ===
+                                  format(new Date(), "yyyy-MM-dd") && (
+                                  <span className="w-2 h-2 bg-primary rounded-full"></span>
                                 )}
+                              </div>
+                              <div className="flex-1 min-h-0 overflow-hidden">
+                                {attendanceRecord && (
+                                  <AttendanceBadge record={attendanceRecord} />
+                                )}
+                              </div>
+                            </div>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>
+                                {format(dayData, "EEEE, MMMM d, yyyy")}
+                              </DialogTitle>
+                            </DialogHeader>
+
+                            {attendanceRecord && (
+                              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-md">
+                                <span className="text-sm text-gray-600">
+                                  Current status:
+                                </span>
+                                <AttendanceBadge record={attendanceRecord} />
                               </div>
                             )}
 
-                            <div className="flex gap-2">
-                              <Button type="submit" disabled={isLoading}>
-                                {isLoading ? "Saving..." : (userRole === "ADMIN" ? "Save" : "Request")}
-                              </Button>
-                              <DialogClose asChild>
-                                <Button type="button" variant="outline" ref={dialogCloseRef}>
-                                  Cancel
+                            <form
+                              className="grid gap-4"
+                              onSubmit={handleSubmit}
+                            >
+                              <div>
+                                <Select
+                                  value={eventType}
+                                  onValueChange={(value) => {
+                                    setEventType(value);
+                                  }}
+                                >
+                                  <SelectTrigger className="w-full mt-2">
+                                    <SelectValue placeholder="Select event type" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="ON_TIME">
+                                      Present
+                                    </SelectItem>
+                                    <SelectItem value="LATE">
+                                      Late Entry
+                                    </SelectItem>
+                                    <SelectItem value="ON_LEAVE">
+                                      On Leave
+                                    </SelectItem>
+                                    <SelectItem value="ABSENT">
+                                      Absent
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                {errors.eventType && (
+                                  <p className="text-sm text-red-500 mt-1">
+                                    {errors.eventType}
+                                  </p>
+                                )}
+                              </div>
+
+                              {eventType === "ON_LEAVE" && (
+                                <div>
+                                  <Textarea
+                                    value={reason}
+                                    onChange={(e) => setReason(e.target.value)}
+                                    placeholder="Reason for leave (minimum 8 characters)"
+                                  />
+                                  {errors.reason && (
+                                    <p className="text-sm text-red-500 mt-1">
+                                      {errors.reason}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+
+                              <div className="flex gap-2">
+                                <Button type="submit" disabled={isLoading}>
+                                  {isLoading
+                                    ? "Saving..."
+                                    : userRole === "ADMIN"
+                                      ? "Save"
+                                      : "Request"}
                                 </Button>
-                              </DialogClose>
-                            </div>
-                          </form>
-
-                        </DialogContent>
-                      </Dialog>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+                                {selectedAttendance && (
+                                  <Button
+                                    type="button"
+                                    variant="default"
+                                    onClick={handleDelete}
+                                    disabled={isLoading}
+                                  >
+                                    Request Delete
+                                  </Button>
+                                )}
+                                <DialogClose asChild>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    ref={dialogCloseRef}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </DialogClose>
+                              </div>
+                            </form>
+                          </DialogContent>
+                        </Dialog>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ),
+            )}
           </tbody>
-
         </table>
       </div>
-
     </div>
-  )
+  );
 }
