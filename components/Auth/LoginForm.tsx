@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useState } from "react";
 
@@ -7,20 +7,21 @@ import {
   FieldError,
   FieldGroup,
   FieldLabel,
-} from "@/components/ui/field"
+} from "@/components/ui/field";
 
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
-import { useSignIn } from '@clerk/nextjs'
+import { useSignIn } from "@clerk/nextjs";
 
+import { useUser } from "@clerk/nextjs";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-export default function LoginForm() {
+export default function LoginForm() {  
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
+  // const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -55,8 +56,9 @@ export default function LoginForm() {
     }
 
     // API call
-    let errorMessage = "Registration failed, please try again.";
+    const errorMessage = "Login failed, please try again.";
     try {
+      console.log("sent");
 
       if (!signIn) {
         setErrors({ submit: "Sign-in is not initialized." });
@@ -70,17 +72,23 @@ export default function LoginForm() {
       });
       console.log("SignIn Attempt:", signInAttempt);
 
-      if (signInAttempt.status === "complete" && signInAttempt.createdSessionId) {
+      if (
+        signInAttempt.status === "complete" &&
+        signInAttempt.createdSessionId
+      ) {
         await setActive({ session: signInAttempt.createdSessionId });
         router.push("/");
       } else if (signInAttempt.status === "needs_second_factor") {
-
-        // show 2FA input to the user
-        setErrors({ submit: "Please complete two-factor authentication to sign in." });
+        // show 2FA error
+        setErrors({
+          submit: "Please complete two-factor authentication to sign in.",
+        });
       }
-
-    } catch (error) {
-      setErrors({ submit: errorMessage });
+    } catch (err: any) {
+      console.log("Clerk Error:", err);
+      setErrors({
+        submit: err?.errors?.[0]?.longMessage || "Login failed",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -117,7 +125,7 @@ export default function LoginForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 type="password"
                 id="password"
-                autoComplete="new-password"
+                autoComplete="current-password"
                 placeholder="••••••••"
                 disabled={isLoading}
                 required={true}
@@ -132,22 +140,21 @@ export default function LoginForm() {
             </div>
           )}
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isLoading}
-          >
-            {isLoading ? "Login..." : "Login"}
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Signing in..." : "Login"}
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">
             Don't have an account?{" "}
-            <Link href="/register" className="text-primary hover:underline font-medium">
+            <Link
+              href="/register"
+              className="text-primary hover:underline font-medium"
+            >
               Sign Up
             </Link>
           </p>
         </form>
       </section>
     </div>
-  )
+  );
 }
