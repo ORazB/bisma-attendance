@@ -42,7 +42,7 @@ model User {
   role    Role   @default(USER)
 
   classId Int   @unique
-  class   Class @relation(fields: [classId], references: [id])
+  class   Class? @relation(fields: [classId], references: [id])
 
   attendances        Attendance[]
   attendanceRequests AttendanceRequest[]
