@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
-import { AttendanceRequest } from "@/app/generated/prisma";
+import type { AttendanceRequest } from "@prisma/client";
 
 import { SignedIn, UserButton } from '@clerk/nextjs';
 

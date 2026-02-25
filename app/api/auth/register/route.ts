@@ -4,11 +4,10 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
 
 import prisma from "@/lib/prisma";
-import { Prisma } from "@/app/generated/prisma/client";
+import { Prisma, Role } from "@prisma/client";
 
 import { z } from "zod";
 
-import { Role } from "@/app/generated/prisma";
 
 const registerSchema = z.object({
   email: z.email("Invalid email address"),
