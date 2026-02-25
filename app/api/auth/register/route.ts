@@ -85,6 +85,8 @@ export async function POST(request: NextRequest) {
         { status: 500 },
       );
     }
+    
+    console.error("DB error:", error);
 
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -96,7 +98,7 @@ export async function POST(request: NextRequest) {
       );
     }
     return NextResponse.json(
-      { message: "Failed to create user in database." },
+      { message: "Failed to create user in database.", detail: String(error) },
       { status: 500 },
     );
   }
