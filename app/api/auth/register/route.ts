@@ -4,7 +4,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
 
 import prisma from "@/lib/prisma";
-import { Prisma, Role } from "@prisma/client";
+import { Role, Prisma } from "@/generated/prisma";
 
 import { z } from "zod";
 
