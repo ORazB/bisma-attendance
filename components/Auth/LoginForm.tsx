@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 
 import { useSignIn } from "@clerk/nextjs";
 
-import { useUser } from "@clerk/nextjs";
+// import { useUser } from "@clerk/nextjs";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -29,10 +29,8 @@ export default function LoginForm() {
   const router = useRouter();
   const { signIn, setActive } = useSignIn();
   
-  const { isSignedIn, user, isLoaded } = useUser();
-  if (!isLoaded) return <div>Loading...</div>;
-  
-  console.log(user);
+  // const { isLoaded } = useUser();
+  // if (!isLoaded) return <div>Loading...</div>;
 
   const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
