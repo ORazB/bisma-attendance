@@ -1,15 +1,29 @@
 "use client";
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger
+  PopoverTrigger,
 } from "@/components/ui/popover";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import Image from "next/image";
 
-import { startOfWeek, endOfWeek, format, eachDayOfInterval, isWithinInterval } from "date-fns"
+import {
+  startOfWeek,
+  endOfWeek,
+  format,
+  eachDayOfInterval,
+  isWithinInterval,
+} from "date-fns";
 
 import { useState, useMemo } from "react";
 
@@ -23,37 +37,47 @@ interface AdminPageProps {
   userImages: Record<string, string>;
 }
 
-export default function AdminPage({ users, userAttendance, userImages }: AdminPageProps) {
-  const defaultDate = new Date('2026-02-03')
-  
-  const [date, setDate] = useState<Date | undefined>(defaultDate)
+export default function AdminPage({
+  users,
+  userAttendance,
+  userImages,
+}: AdminPageProps) {
+  const defaultDate = new Date();
+
+  const [date, setDate] = useState<Date | undefined>(defaultDate);
+  const [selectedClass, setSelectedClass] = useState<string | undefined>(
+    undefined,
+  );
+  const [selectedGrade, setSelectedGrade] = useState<string | undefined>(
+    undefined,
+  );
   const [week, setWeek] = useState<{ from: Date; to: Date } | null>({
     from: startOfWeek(defaultDate, { weekStartsOn: 1 }),
     to: endOfWeek(defaultDate, { weekStartsOn: 1 }),
-  })
-  
+  });
+
   const user = useUser();
   if (user) {
     console.log("User info:", user);
   }
-  
+
   const handleWeekSelect = (selected: Date | undefined) => {
-    if (!selected) return
-    setDate(selected)
-    const weekStart = startOfWeek(selected, { weekStartsOn: 1 })
-    const weekEnd = endOfWeek(selected, { weekStartsOn: 1 })
+    if (!selected) return;
+    setDate(selected);
+    const weekStart = startOfWeek(selected, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(selected, { weekStartsOn: 1 });
     setWeek({
       from: weekStart,
       to: weekEnd,
-    })
-  }
+    });
+  };
 
   const weekDays = week
     ? eachDayOfInterval({
-      start: week.from,
-      end: week.to,
-    })
-    : []
+        start: week.from,
+        end: week.to,
+      })
+    : [];
 
   // Calculate attendance statistics for the selected week
   const weekStats = useMemo(() => {
@@ -61,7 +85,10 @@ export default function AdminPage({ users, userAttendance, userImages }: AdminPa
 
     const weekAttendance = userAttendance.filter((attendance) => {
       const attendanceDate = new Date(attendance.date);
-      return isWithinInterval(attendanceDate, { start: week.from, end: week.to });
+      return isWithinInterval(attendanceDate, {
+        start: week.from,
+        end: week.to,
+      });
     });
 
     const stats = {
@@ -73,16 +100,16 @@ export default function AdminPage({ users, userAttendance, userImages }: AdminPa
 
     weekAttendance.forEach((attendance) => {
       switch (attendance.status) {
-        case 'ON_TIME':
+        case "ON_TIME":
           stats.present++;
           break;
-        case 'LATE':
+        case "LATE":
           stats.late++;
           break;
-        case 'ON_LEAVE':
+        case "ON_LEAVE":
           stats.onLeave++;
           break;
-        case 'ABSENT':
+        case "ABSENT":
           stats.absent++;
           break;
       }
@@ -100,29 +127,34 @@ export default function AdminPage({ users, userAttendance, userImages }: AdminPa
       ON_LEAVE: "bg-red-100 text-red-800 border-red-200",
       LATE: "bg-yellow-100 text-yellow-800 border-yellow-200",
       ABSENT: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    }
+    };
 
     const statusIcons = {
       ON_TIME: "fa-check",
       ABSENT: "fa-times",
       ON_LEAVE: "fa-calendar",
       LATE: "fa-clock",
-    }
+    };
 
     return (
-      <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-xs font-medium ${statusStyles[record.status as keyof typeof statusStyles]}`}>
-        <i className={`fa-solid ${statusIcons[record.status as keyof typeof statusIcons]}`}></i>
+      <div
+        className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-xs font-medium ${statusStyles[record.status as keyof typeof statusStyles]}`}
+      >
+        <i
+          className={`fa-solid ${statusIcons[record.status as keyof typeof statusIcons]}`}
+        ></i>
         <span>{record.status}</span>
       </div>
-    )
+    );
   }
 
-  const attendanceMap = new Map<string, Attendance>()
+  const attendanceMap = new Map<string, Attendance>();
 
   userAttendance.forEach((attendance) => {
-    const key = `${attendance.userId}-${attendance.date.toISOString().split('T')[0]}`
-    attendanceMap.set(key, attendance)
-  })
+    const key = `${attendance.userId}-${attendance.date.toISOString().split("T")[0]}`;
+    attendanceMap.set(key, attendance);
+  });
+
   console.log(attendanceMap);
 
   function getAttendance(userId: number, day: Date) {
@@ -150,7 +182,6 @@ export default function AdminPage({ users, userAttendance, userImages }: AdminPa
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-
           <div className="flex flex-col gap-3 p-4 bg-white border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-shadow">
             <div className="flex gap-3 items-center">
               <div className="flex items-center justify-center w-10 h-10 bbg-gray-300-50 border border-gray-400 rounded-md">
@@ -158,8 +189,12 @@ export default function AdminPage({ users, userAttendance, userImages }: AdminPa
               </div>
               <h2 className="text-base font-semibold text-gray-700">Present</h2>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">{weekStats.present}</h1>
-            <p className="text-sm text-gray-500">{totalPossibleAttendance - weekStats.present} records remaining</p>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {weekStats.present}
+            </h1>
+            <p className="text-sm text-gray-500">
+              {totalPossibleAttendance - weekStats.present} missing records
+            </p>
           </div>
 
           <div className="flex flex-col gap-3 p-4 bg-white border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-shadow">
@@ -167,9 +202,13 @@ export default function AdminPage({ users, userAttendance, userImages }: AdminPa
               <div className="flex items-center justify-center w-10 h-10 bg-gray-300-50 border border-gray-400 rounded-md">
                 <i className="fa fa-hourglass-end text-gray-700"></i>
               </div>
-              <h2 className="text-base font-semibold text-gray-700">Late Entry</h2>
+              <h2 className="text-base font-semibold text-gray-700">
+                Late Entry
+              </h2>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">{weekStats.late}</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {weekStats.late}
+            </h1>
             <p className="text-sm text-gray-500">{weekStats.present} on time</p>
           </div>
 
@@ -178,9 +217,13 @@ export default function AdminPage({ users, userAttendance, userImages }: AdminPa
               <div className="flex items-center justify-center w-10 h-10 bg-gray-300-50 border border-gray-400 rounded-md">
                 <i className="fa fa-calendar-check text-gray-700"></i>
               </div>
-              <h2 className="text-base font-semibold text-gray-700">On Leave</h2>
+              <h2 className="text-base font-semibold text-gray-700">
+                On Leave
+              </h2>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">{weekStats.onLeave}</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {weekStats.onLeave}
+            </h1>
             <p className="text-sm text-gray-500">Approved leave</p>
           </div>
 
@@ -191,35 +234,60 @@ export default function AdminPage({ users, userAttendance, userImages }: AdminPa
               </div>
               <h2 className="text-base font-semibold text-gray-700">Absent</h2>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">{weekStats.absent}</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {weekStats.absent}
+            </h1>
             <p className="text-sm text-gray-500">Without informing</p>
           </div>
-
         </div>
 
-        {/* Week Selector */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              data-empty={!date}
-              className="data-[empty=true]:text-muted-foreground w-max justify-between text-left font-normal mb-6"
-            >
-              <i className="fa-solid fa-calendar text-primary mr-2"></i>
-              {week
-                ? `${format(week.from, "PPP")} - ${format(week.to, "PPP")}`
-                : "Pick a week"}
-              <i className="fa-solid fa-chevron-down ml-2"></i>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={handleWeekSelect}
-            />
-          </PopoverContent>
-        </Popover>
+        <div className="flex justify-start items-center gap-4 mb-6">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                data-empty={!date}
+                className="data-[empty=true]:text-muted-foreground w-max justify-between text-left font-normal"
+              >
+                <i className="fa-solid fa-calendar text-primary mr-2"></i>
+                {week
+                  ? `${format(week.from, "PPP")} - ${format(week.to, "PPP")}`
+                  : "Pick a week"}
+                <i className="fa-solid fa-chevron-down ml-2"></i>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={handleWeekSelect}
+              />
+            </PopoverContent>
+          </Popover>
+          
+          <Select onValueChange={setSelectedGrade}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select grade" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="DKV">10</SelectItem>
+              <SelectItem value="PPLG">11</SelectItem>
+              <SelectItem value="TJKT">12</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select onValueChange={setSelectedClass}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select class" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="DKV">DKV</SelectItem>
+              <SelectItem value="PPLG">PPLG</SelectItem>
+              <SelectItem value="TJKT">TJKT</SelectItem>
+              <SelectItem value="AKUNTANSI">AKUNTANSI</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Attendance Table */}
         <div className="bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm">
@@ -227,7 +295,9 @@ export default function AdminPage({ users, userAttendance, userImages }: AdminPa
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr className="border-b border-gray-300">
-                  <th className="text-left py-4 px-6 text-base font-semibold text-gray-700">Employee</th>
+                  <th className="text-left py-4 px-6 text-base font-semibold text-gray-700">
+                    Student
+                  </th>
 
                   {weekDays.map((day) => (
                     <th
@@ -244,8 +314,11 @@ export default function AdminPage({ users, userAttendance, userImages }: AdminPa
 
               <tbody>
                 {users.map((user) => (
-                  <tr key={user.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                    {/* Employee column */}
+                  <tr
+                    key={user.id}
+                    className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                  >
+                    {/* Student column */}
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
                         <Image
@@ -256,7 +329,9 @@ export default function AdminPage({ users, userAttendance, userImages }: AdminPa
                           className="w-10 h-10 rounded-full object-cover"
                         />
                         <div>
-                          <div className="font-medium text-gray-900">{user.name}</div>
+                          <div className="font-medium text-gray-900">
+                            {user.name}
+                          </div>
                           <div className="text-sm text-gray-500">
                             {user.role}
                           </div>
@@ -265,20 +340,23 @@ export default function AdminPage({ users, userAttendance, userImages }: AdminPa
                     </td>
 
                     {weekDays.map((day) => {
-                      const record = getAttendance(user.id, day)
+                      const record = getAttendance(user.id, day);
 
                       return (
-                        <td key={day.toISOString()} className="text-center border-l border-gray-200 p-4 min-w-35">
+                        <td
+                          key={day.toISOString()}
+                          className="text-center border-l border-gray-200 p-4 min-w-35"
+                        >
                           <div className="flex flex-col">
-                            <span className="text-sm font-medium text-left text-gray-600 mb-2">{day.getDate()}</span>
+                            <span className="text-sm font-medium text-left text-gray-600 mb-2">
+                              {day.getDate()}
+                            </span>
                             <div className="min-h-7">
-                              {record && (
-                                <AttendanceBadge record={record} />
-                              )}
+                              {record && <AttendanceBadge record={record} />}
                             </div>
                           </div>
                         </td>
-                      )
+                      );
                     })}
                   </tr>
                 ))}
@@ -288,5 +366,5 @@ export default function AdminPage({ users, userAttendance, userImages }: AdminPa
         </div>
       </div>
     </div>
-  )
+  );
 }
