@@ -16,8 +16,7 @@ import { useState, useEffect, useMemo } from "react";
 
 import { useUser } from "@clerk/nextjs";
 
-import { Attendance } from "@/app/generated/prisma";
-import { User } from "@/app/generated/prisma";
+import type { Attendance, User } from "@prisma/client";
 
 interface AdminPageProps {
   users: User[];

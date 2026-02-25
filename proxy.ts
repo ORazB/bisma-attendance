@@ -1,7 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import prisma from './lib/prisma';
-import { Role } from './app/generated/prisma';
+import { Role } from '@prisma/client';
 
 const isAdminRoute = createRouteMatcher(['/admin(.*)']);
 const isPublicRoute = createRouteMatcher(['/register', '/login', '/api(.*)']);

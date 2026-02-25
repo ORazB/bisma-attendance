@@ -42,7 +42,7 @@ import { useUser } from "@clerk/nextjs";
 
 import { toast } from "sonner";
 
-import { Attendance } from "@/app/generated/prisma";
+import type { Attendance } from "@prisma/client";
 
 interface MainPageProps {
   userRole: string;
