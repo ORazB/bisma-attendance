@@ -1,7 +1,4 @@
 "use client";
-
-import Image from "next/image";
-
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -10,13 +7,15 @@ import {
   PopoverTrigger
 } from "@/components/ui/popover";
 
+import Image from "next/image";
+
 import { startOfWeek, endOfWeek, format, eachDayOfInterval, isWithinInterval } from "date-fns"
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 
 import { useUser } from "@clerk/nextjs";
 
-import type { Attendance, User } from "@prisma/client";
+import type { Attendance, User } from "@/generated/prisma";
 
 interface AdminPageProps {
   users: User[];
@@ -25,32 +24,29 @@ interface AdminPageProps {
 }
 
 export default function AdminPage({ users, userAttendance, userImages }: AdminPageProps) {
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [week, setWeek] = useState<{ from: Date; to: Date } | null>(null);
-
+  const defaultDate = new Date('2026-02-03')
+  
+  const [date, setDate] = useState<Date | undefined>(defaultDate)
+  const [week, setWeek] = useState<{ from: Date; to: Date } | null>({
+    from: startOfWeek(defaultDate, { weekStartsOn: 1 }),
+    to: endOfWeek(defaultDate, { weekStartsOn: 1 }),
+  })
+  
   const user = useUser();
-
   if (user) {
     console.log("User info:", user);
   }
-
+  
   const handleWeekSelect = (selected: Date | undefined) => {
     if (!selected) return
-
     setDate(selected)
-
-    const weekStart = startOfWeek(selected, { weekStartsOn: 1 }) // Monday
+    const weekStart = startOfWeek(selected, { weekStartsOn: 1 })
     const weekEnd = endOfWeek(selected, { weekStartsOn: 1 })
-
     setWeek({
       from: weekStart,
       to: weekEnd,
     })
   }
-
-  useEffect(() => {
-    handleWeekSelect(new Date('2026-02-03')) // Default week
-  }, [])
 
   const weekDays = week
     ? eachDayOfInterval({
@@ -98,7 +94,7 @@ export default function AdminPage({ users, userAttendance, userImages }: AdminPa
   const totalUsers = users.length;
   const totalPossibleAttendance = totalUsers * weekDays.length;
 
-  function AttendanceBadge({ record }: { record: any }) {
+  function AttendanceBadge({ record }: { record: Attendance }) {
     const statusStyles = {
       ON_TIME: "bg-green-100 text-green-800 border-green-200",
       ON_LEAVE: "bg-red-100 text-red-800 border-red-200",
@@ -121,7 +117,7 @@ export default function AdminPage({ users, userAttendance, userImages }: AdminPa
     )
   }
 
-  const attendanceMap = new Map<string, any>()
+  const attendanceMap = new Map<string, Attendance>()
 
   userAttendance.forEach((attendance) => {
     const key = `${attendance.userId}-${attendance.date.toISOString().split('T')[0]}`
@@ -252,7 +248,9 @@ export default function AdminPage({ users, userAttendance, userImages }: AdminPa
                     {/* Employee column */}
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
-                        <img
+                        <Image
+                          width={40}
+                          height={40}
                           src={userImages[user.clerkId]}
                           alt={user.name}
                           className="w-10 h-10 rounded-full object-cover"
