@@ -2,8 +2,9 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
-  output   = "../generated/prisma"
+  provider        = "prisma-client-js"
+  output          = "../generated/prisma"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -41,8 +42,11 @@ model User {
   name    String
   role    Role   @default(USER)
 
-  classId Int    @unique
-  class   Class? @relation(fields: [classId], references: [id])
+  gradeId Int?
+  grade   Grade? @relation(fields: [gradeId], references: [id])
+
+  majorId Int?
+  major   Major? @relation(fields: [majorId], references: [id])
 
   attendances        Attendance[]
   attendanceRequests AttendanceRequest[]
@@ -51,12 +55,16 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
-model Class {
-  id   Int    @id @default(autoincrement())
-  name String
-  user User?  @relation
+model Grade {
+  id    Int    @id @default(autoincrement())
+  value Int    @unique
+  users User[]
+}
 
-  createdAt DateTime @default(now())
+model Major {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users User[]
 }
 
 model Attendance {
@@ -68,8 +76,9 @@ model Attendance {
   status AttendanceStatus @default(ON_TIME)
   note   String?
 
-  // minutesLate  Int?   // only relevant when status = LATE
-  // minutesEarly Int?   // if needed later
+  // If needed later
+  // minutesLate  Int?
+  // minutesEarly Int?
 
   attendanceRequests AttendanceRequest[]
 

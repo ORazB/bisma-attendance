@@ -5,7 +5,7 @@ import AdminPage from "@/components/Admin/AdminPage";
 import { redirect } from "next/navigation";
 
 export default async function Home() {
-  const { userId } = await auth();
+  const { userId, sessionClaims } = await auth();
   if (!userId) return redirect("/login");
 
   const user = await prisma.user.findUnique({
@@ -35,6 +35,5 @@ export default async function Home() {
   response.data.forEach(clerkUser => {
     userImageMap[clerkUser.id] = clerkUser.imageUrl;
   });
-
   return <AdminPage userAttendance={userAttendance} users={users} userImages={userImageMap} />;
 }

@@ -126,15 +126,20 @@ exports.Prisma.UserScalarFieldEnum = {
   email: 'email',
   name: 'name',
   role: 'role',
-  classId: 'classId',
+  gradeId: 'gradeId',
+  majorId: 'majorId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
 
-exports.Prisma.ClassScalarFieldEnum = {
+exports.Prisma.GradeScalarFieldEnum = {
   id: 'id',
-  name: 'name',
-  createdAt: 'createdAt'
+  value: 'value'
+};
+
+exports.Prisma.MajorScalarFieldEnum = {
+  id: 'id',
+  name: 'name'
 };
 
 exports.Prisma.AttendanceScalarFieldEnum = {
@@ -193,7 +198,8 @@ exports.RequestStatus = exports.$Enums.RequestStatus = {
 
 exports.Prisma.ModelName = {
   User: 'User',
-  Class: 'Class',
+  Grade: 'Grade',
+  Major: 'Major',
   Attendance: 'Attendance',
   AttendanceRequest: 'AttendanceRequest'
 };

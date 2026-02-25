@@ -187,7 +187,7 @@ export default function MainPage({
       return;
     }
 
-    let errorMessage = "Event creation failed, please try again.";
+    const errorMessage = "Event creation failed, please try again.";
 
     try {
       const isEdit = !!selectedAttendance;
@@ -249,8 +249,8 @@ export default function MainPage({
         body: JSON.stringify({
           attendanceId: selectedAttendance.id,
           requestType: "DELETE",
-          date: selectedAttendance.date, // ← ADD THIS
-          eventType: selectedAttendance.status, // ← ADD THIS
+          date: selectedAttendance.date,
+          eventType: selectedAttendance.status,
           reason: "Delete request",
         }),
       });
