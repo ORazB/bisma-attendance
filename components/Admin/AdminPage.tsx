@@ -31,6 +31,8 @@ import { useUser } from "@clerk/nextjs";
 
 import type { Attendance, User } from "@/generated/prisma";
 
+import { AttendanceBadge, StatCard } from "@/components/Landing/StatCard";
+
 interface AdminPageProps {
   users: User[];
   userAttendance: Attendance[];
@@ -57,105 +59,48 @@ export default function AdminPage({
   });
 
   const user = useUser();
-  if (user) {
-    console.log("User info:", user);
-  }
+  if (user) console.log("User info:", user);
 
   const handleWeekSelect = (selected: Date | undefined) => {
     if (!selected) return;
     setDate(selected);
-    const weekStart = startOfWeek(selected, { weekStartsOn: 1 });
-    const weekEnd = endOfWeek(selected, { weekStartsOn: 1 });
     setWeek({
-      from: weekStart,
-      to: weekEnd,
+      from: startOfWeek(selected, { weekStartsOn: 1 }),
+      to: endOfWeek(selected, { weekStartsOn: 1 }),
     });
   };
 
   const weekDays = week
-    ? eachDayOfInterval({
-        start: week.from,
-        end: week.to,
-      })
+    ? eachDayOfInterval({ start: week.from, end: week.to })
     : [];
 
-  // Calculate attendance statistics for the selected week
   const weekStats = useMemo(() => {
     if (!week) return { present: 0, late: 0, onLeave: 0, absent: 0 };
 
-    const weekAttendance = userAttendance.filter((attendance) => {
-      const attendanceDate = new Date(attendance.date);
-      return isWithinInterval(attendanceDate, {
-        start: week.from,
-        end: week.to,
+    const stats = { present: 0, late: 0, onLeave: 0, absent: 0 };
+
+    userAttendance
+      .filter((a) =>
+        isWithinInterval(new Date(a.date), { start: week.from, end: week.to }),
+      )
+      .forEach((a) => {
+        if (a.status === "ON_TIME") stats.present++;
+        else if (a.status === "LATE") stats.late++;
+        else if (a.status === "ON_LEAVE") stats.onLeave++;
+        else if (a.status === "ABSENT") stats.absent++;
       });
-    });
-
-    const stats = {
-      present: 0,
-      late: 0,
-      onLeave: 0,
-      absent: 0,
-    };
-
-    weekAttendance.forEach((attendance) => {
-      switch (attendance.status) {
-        case "ON_TIME":
-          stats.present++;
-          break;
-        case "LATE":
-          stats.late++;
-          break;
-        case "ON_LEAVE":
-          stats.onLeave++;
-          break;
-        case "ABSENT":
-          stats.absent++;
-          break;
-      }
-    });
 
     return stats;
   }, [week, userAttendance]);
 
-  const totalUsers = users.length;
-  const totalPossibleAttendance = totalUsers * weekDays.length;
-
-  function AttendanceBadge({ record }: { record: Attendance }) {
-    const statusStyles = {
-      ON_TIME: "bg-green-100 text-green-800 border-green-200",
-      ON_LEAVE: "bg-red-100 text-red-800 border-red-200",
-      LATE: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      ABSENT: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    };
-
-    const statusIcons = {
-      ON_TIME: "fa-check",
-      ABSENT: "fa-times",
-      ON_LEAVE: "fa-calendar",
-      LATE: "fa-clock",
-    };
-
-    return (
-      <div
-        className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-xs font-medium ${statusStyles[record.status as keyof typeof statusStyles]}`}
-      >
-        <i
-          className={`fa-solid ${statusIcons[record.status as keyof typeof statusIcons]}`}
-        ></i>
-        <span>{record.status}</span>
-      </div>
-    );
-  }
-
-  const attendanceMap = new Map<string, Attendance>();
-
-  userAttendance.forEach((attendance) => {
-    const key = `${attendance.userId}-${attendance.date.toISOString().split("T")[0]}`;
-    attendanceMap.set(key, attendance);
-  });
-
-  console.log(attendanceMap);
+  const attendanceMap = useMemo(() => {
+    const map = new Map<string, Attendance>();
+    userAttendance.forEach((a) => {
+      const key = `${a.userId}-${new Date(a.date).toISOString().split("T")[0]}`;
+      map.set(key, a);
+    });
+    return map;
+  }, [userAttendance]);
 
   function getAttendance(userId: number, day: Date) {
     const key = `${userId}-${format(day, "yyyy-MM-dd")}`;
@@ -175,73 +120,42 @@ export default function AdminPage({
               Analyse attendance records of students
             </h3>
           </div>
-
-          <Button>
-            Download <i className="fa-solid fa-download ml-2"></i>
-          </Button>
         </div>
 
+        {/* Stat Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="flex flex-col gap-3 p-4 bg-white border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex gap-3 items-center">
-              <div className="flex items-center justify-center w-10 h-10 bbg-gray-300-50 border border-gray-400 rounded-md">
-                <i className="fa fa-clock text-gray-700"></i>
-              </div>
-              <h2 className="text-base font-semibold text-gray-700">Present</h2>
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {weekStats.present}
-            </h1>
-            <p className="text-sm text-gray-500">
-              {totalPossibleAttendance - weekStats.present} missing records
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3 p-4 bg-white border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex gap-3 items-center">
-              <div className="flex items-center justify-center w-10 h-10 bg-gray-300-50 border border-gray-400 rounded-md">
-                <i className="fa fa-hourglass-end text-gray-700"></i>
-              </div>
-              <h2 className="text-base font-semibold text-gray-700">
-                Late Entry
-              </h2>
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {weekStats.late}
-            </h1>
-            <p className="text-sm text-gray-500">{weekStats.present} on time</p>
-          </div>
-
-          <div className="flex flex-col gap-3 p-4 bg-white border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex gap-3 items-center">
-              <div className="flex items-center justify-center w-10 h-10 bg-gray-300-50 border border-gray-400 rounded-md">
-                <i className="fa fa-calendar-check text-gray-700"></i>
-              </div>
-              <h2 className="text-base font-semibold text-gray-700">
-                On Leave
-              </h2>
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {weekStats.onLeave}
-            </h1>
-            <p className="text-sm text-gray-500">Approved leave</p>
-          </div>
-
-          <div className="flex flex-col gap-3 p-4 bg-white border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex gap-3 items-center">
-              <div className="flex items-center justify-center w-10 h-10 bg-gray-300-50 border border-gray-400 rounded-md">
-                <i className="fa fa-user-minus text-gray-700"></i>
-              </div>
-              <h2 className="text-base font-semibold text-gray-700">Absent</h2>
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {weekStats.absent}
-            </h1>
-            <p className="text-sm text-gray-500">Without informing</p>
-          </div>
+          <StatCard
+            icon="fa-clock"
+            label="Present"
+            value={weekStats.present}
+            trend={{ label: "12%", direction: "up" }}
+            week={true}
+          />
+          <StatCard
+            icon="fa-hourglass-end"
+            label="Late Entry"
+            value={weekStats.late}
+            trend={{ label: "2%", direction: "up" }}
+            week={true}
+          />
+          <StatCard
+            icon="fa-calendar-check"
+            label="On Leave"
+            value={weekStats.onLeave}
+            trend={{ label: "Stable", direction: "stable" }}
+            week={true}
+          />
+          <StatCard
+            icon="fa-user-minus"
+            label="Absent"
+            value={weekStats.absent}
+            trend={{ label: "4%", direction: "down" }}
+            week={true}
+          />
         </div>
 
-        <div className="flex justify-start items-center gap-4 mb-6">
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-4 mb-6">
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -251,7 +165,7 @@ export default function AdminPage({
               >
                 <i className="fa-solid fa-calendar text-primary mr-2"></i>
                 {week
-                  ? `${format(week.from, "PPP")} - ${format(week.to, "PPP")}`
+                  ? `${format(week.from, "PPP")} – ${format(week.to, "PPP")}`
                   : "Pick a week"}
                 <i className="fa-solid fa-chevron-down ml-2"></i>
               </Button>
@@ -264,15 +178,15 @@ export default function AdminPage({
               />
             </PopoverContent>
           </Popover>
-          
+
           <Select onValueChange={setSelectedGrade}>
             <SelectTrigger>
               <SelectValue placeholder="Select grade" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="DKV">10</SelectItem>
-              <SelectItem value="PPLG">11</SelectItem>
-              <SelectItem value="TJKT">12</SelectItem>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="11">11</SelectItem>
+              <SelectItem value="12">12</SelectItem>
             </SelectContent>
           </Select>
 
@@ -298,7 +212,6 @@ export default function AdminPage({
                   <th className="text-left py-4 px-6 text-base font-semibold text-gray-700">
                     Student
                   </th>
-
                   {weekDays.map((day) => (
                     <th
                       key={day.toISOString()}
@@ -311,47 +224,38 @@ export default function AdminPage({
                   ))}
                 </tr>
               </thead>
-
               <tbody>
-                {users.map((user) => (
-                  <tr
-                    key={user.id}
-                    className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
-                  >
-                    {/* Student column */}
-                    <td className="py-4 px-6">
+                {users.map((u) => (
+                  <tr key={u.id} className="border-b border-gray-200">
+                    <td className="py-4 px-6 hover:bg-gray-50 transition-colors cursor-pointer">
                       <div className="flex items-center gap-3">
                         <Image
                           width={40}
                           height={40}
-                          src={userImages[user.clerkId]}
-                          alt={user.name}
+                          src={userImages[u.clerkId]}
+                          alt={u.name}
                           className="w-10 h-10 rounded-full object-cover"
                         />
                         <div>
                           <div className="font-medium text-gray-900">
-                            {user.name}
+                            {u.name}
                           </div>
-                          <div className="text-sm text-gray-500">
-                            {user.role}
-                          </div>
+                          <div className="text-sm text-gray-500">{u.role}</div>
                         </div>
                       </div>
                     </td>
-
                     {weekDays.map((day) => {
-                      const record = getAttendance(user.id, day);
-
+                      const record = getAttendance(u.id, day);
                       return (
                         <td
                           key={day.toISOString()}
-                          className="text-center border-l border-gray-200 p-4 min-w-35"
+                          className="cursor-pointer text-center border-l border-gray-200 p-4 min-w-36 hover:bg-gray-50 transition-colors"
                         >
                           <div className="flex flex-col">
                             <span className="text-sm font-medium text-left text-gray-600 mb-2">
                               {day.getDate()}
                             </span>
-                            <div className="min-h-7">
+                            <div className="min-h-7 w-max">
                               {record && <AttendanceBadge record={record} />}
                             </div>
                           </div>
