@@ -34,6 +34,13 @@ enum RequestStatus {
   REJECTED
 }
 
+enum MajorList {
+  PPLG
+  TJKT
+  DKV
+  AKUNTANSI
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   clerkId   String   @unique
@@ -62,7 +69,7 @@ model Grade {
 
 model Major {
   id    Int    @id @default(autoincrement())
-  name  String @unique
+  name  MajorList @unique
   users User[]
 }
 
@@ -98,8 +105,11 @@ model AttendanceRequest {
   student   User @relation(fields: [studentId], references: [id])
 
   status             RequestStatus    @default(PENDING)
+  
   requestedEventType AttendanceStatus
   requestedDate      DateTime
+  requestType        AttendanceRequestType
+  
   reason             String?
 
   createdAt DateTime @default(now())
