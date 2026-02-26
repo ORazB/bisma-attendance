@@ -17,6 +17,7 @@ export default clerkMiddleware(async (auth, req) => {
   }
   
   const role = (sessionClaims as { role?: string })?.role;
+  console.log(role);
 
   if (userId && isAdminRoute(req)) {
     if (!sessionClaims || role !== Role.ADMIN) {
