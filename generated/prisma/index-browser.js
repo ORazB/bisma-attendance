@@ -159,6 +159,7 @@ exports.Prisma.AttendanceRequestScalarFieldEnum = {
   status: 'status',
   requestedEventType: 'requestedEventType',
   requestedDate: 'requestedDate',
+  requestType: 'requestType',
   reason: 'reason',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -183,6 +184,13 @@ exports.Role = exports.$Enums.Role = {
   USER: 'USER'
 };
 
+exports.MajorList = exports.$Enums.MajorList = {
+  PPLG: 'PPLG',
+  TJKT: 'TJKT',
+  DKV: 'DKV',
+  AKUNTANSI: 'AKUNTANSI'
+};
+
 exports.AttendanceStatus = exports.$Enums.AttendanceStatus = {
   ON_TIME: 'ON_TIME',
   LATE: 'LATE',
@@ -194,6 +202,12 @@ exports.RequestStatus = exports.$Enums.RequestStatus = {
   PENDING: 'PENDING',
   APPROVED: 'APPROVED',
   REJECTED: 'REJECTED'
+};
+
+exports.AttendanceRequestType = exports.$Enums.AttendanceRequestType = {
+  CREATE: 'CREATE',
+  UPDATE: 'UPDATE',
+  DELETE: 'DELETE'
 };
 
 exports.Prisma.ModelName = {

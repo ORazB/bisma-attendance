@@ -78,6 +78,16 @@ export const RequestStatus: {
 
 export type RequestStatus = (typeof RequestStatus)[keyof typeof RequestStatus]
 
+
+export const MajorList: {
+  PPLG: 'PPLG',
+  TJKT: 'TJKT',
+  DKV: 'DKV',
+  AKUNTANSI: 'AKUNTANSI'
+};
+
+export type MajorList = (typeof MajorList)[keyof typeof MajorList]
+
 }
 
 export type Role = $Enums.Role
@@ -95,6 +105,10 @@ export const AttendanceRequestType: typeof $Enums.AttendanceRequestType
 export type RequestStatus = $Enums.RequestStatus
 
 export const RequestStatus: typeof $Enums.RequestStatus
+
+export type MajorList = $Enums.MajorList
+
+export const MajorList: typeof $Enums.MajorList
 
 /**
  * ##  Prisma Client ʲˢ
@@ -3762,12 +3776,12 @@ export namespace Prisma {
 
   export type MajorMinAggregateOutputType = {
     id: number | null
-    name: string | null
+    name: $Enums.MajorList | null
   }
 
   export type MajorMaxAggregateOutputType = {
     id: number | null
-    name: string | null
+    name: $Enums.MajorList | null
   }
 
   export type MajorCountAggregateOutputType = {
@@ -3889,7 +3903,7 @@ export namespace Prisma {
 
   export type MajorGroupByOutputType = {
     id: number
-    name: string
+    name: $Enums.MajorList
     _count: MajorCountAggregateOutputType | null
     _avg: MajorAvgAggregateOutputType | null
     _sum: MajorSumAggregateOutputType | null
@@ -3948,7 +3962,7 @@ export namespace Prisma {
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
-      name: string
+      name: $Enums.MajorList
     }, ExtArgs["result"]["major"]>
     composites: {}
   }
@@ -4374,7 +4388,7 @@ export namespace Prisma {
    */
   interface MajorFieldRefs {
     readonly id: FieldRef<"Major", 'Int'>
-    readonly name: FieldRef<"Major", 'String'>
+    readonly name: FieldRef<"Major", 'MajorList'>
   }
     
 
@@ -5988,6 +6002,7 @@ export namespace Prisma {
     status: $Enums.RequestStatus | null
     requestedEventType: $Enums.AttendanceStatus | null
     requestedDate: Date | null
+    requestType: $Enums.AttendanceRequestType | null
     reason: string | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -6000,6 +6015,7 @@ export namespace Prisma {
     status: $Enums.RequestStatus | null
     requestedEventType: $Enums.AttendanceStatus | null
     requestedDate: Date | null
+    requestType: $Enums.AttendanceRequestType | null
     reason: string | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -6012,6 +6028,7 @@ export namespace Prisma {
     status: number
     requestedEventType: number
     requestedDate: number
+    requestType: number
     reason: number
     createdAt: number
     updatedAt: number
@@ -6038,6 +6055,7 @@ export namespace Prisma {
     status?: true
     requestedEventType?: true
     requestedDate?: true
+    requestType?: true
     reason?: true
     createdAt?: true
     updatedAt?: true
@@ -6050,6 +6068,7 @@ export namespace Prisma {
     status?: true
     requestedEventType?: true
     requestedDate?: true
+    requestType?: true
     reason?: true
     createdAt?: true
     updatedAt?: true
@@ -6062,6 +6081,7 @@ export namespace Prisma {
     status?: true
     requestedEventType?: true
     requestedDate?: true
+    requestType?: true
     reason?: true
     createdAt?: true
     updatedAt?: true
@@ -6161,6 +6181,7 @@ export namespace Prisma {
     status: $Enums.RequestStatus
     requestedEventType: $Enums.AttendanceStatus
     requestedDate: Date
+    requestType: $Enums.AttendanceRequestType
     reason: string | null
     createdAt: Date
     updatedAt: Date
@@ -6192,6 +6213,7 @@ export namespace Prisma {
     status?: boolean
     requestedEventType?: boolean
     requestedDate?: boolean
+    requestType?: boolean
     reason?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -6206,6 +6228,7 @@ export namespace Prisma {
     status?: boolean
     requestedEventType?: boolean
     requestedDate?: boolean
+    requestType?: boolean
     reason?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -6220,6 +6243,7 @@ export namespace Prisma {
     status?: boolean
     requestedEventType?: boolean
     requestedDate?: boolean
+    requestType?: boolean
     reason?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -6234,12 +6258,13 @@ export namespace Prisma {
     status?: boolean
     requestedEventType?: boolean
     requestedDate?: boolean
+    requestType?: boolean
     reason?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type AttendanceRequestOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "attendanceId" | "studentId" | "status" | "requestedEventType" | "requestedDate" | "reason" | "createdAt" | "updatedAt", ExtArgs["result"]["attendanceRequest"]>
+  export type AttendanceRequestOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "attendanceId" | "studentId" | "status" | "requestedEventType" | "requestedDate" | "requestType" | "reason" | "createdAt" | "updatedAt", ExtArgs["result"]["attendanceRequest"]>
   export type AttendanceRequestInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     attendance?: boolean | AttendanceRequest$attendanceArgs<ExtArgs>
     student?: boolean | UserDefaultArgs<ExtArgs>
@@ -6266,6 +6291,7 @@ export namespace Prisma {
       status: $Enums.RequestStatus
       requestedEventType: $Enums.AttendanceStatus
       requestedDate: Date
+      requestType: $Enums.AttendanceRequestType
       reason: string | null
       createdAt: Date
       updatedAt: Date
@@ -6700,6 +6726,7 @@ export namespace Prisma {
     readonly status: FieldRef<"AttendanceRequest", 'RequestStatus'>
     readonly requestedEventType: FieldRef<"AttendanceRequest", 'AttendanceStatus'>
     readonly requestedDate: FieldRef<"AttendanceRequest", 'DateTime'>
+    readonly requestType: FieldRef<"AttendanceRequest", 'AttendanceRequestType'>
     readonly reason: FieldRef<"AttendanceRequest", 'String'>
     readonly createdAt: FieldRef<"AttendanceRequest", 'DateTime'>
     readonly updatedAt: FieldRef<"AttendanceRequest", 'DateTime'>
@@ -7201,6 +7228,7 @@ export namespace Prisma {
     status: 'status',
     requestedEventType: 'requestedEventType',
     requestedDate: 'requestedDate',
+    requestType: 'requestType',
     reason: 'reason',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
@@ -7295,6 +7323,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'MajorList'
+   */
+  export type EnumMajorListFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MajorList'>
+    
+
+
+  /**
+   * Reference to a field of type 'MajorList[]'
+   */
+  export type ListEnumMajorListFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MajorList[]'>
+    
+
+
+  /**
    * Reference to a field of type 'AttendanceStatus'
    */
   export type EnumAttendanceStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AttendanceStatus'>
@@ -7319,6 +7361,20 @@ export namespace Prisma {
    * Reference to a field of type 'RequestStatus[]'
    */
   export type ListEnumRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RequestStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'AttendanceRequestType'
+   */
+  export type EnumAttendanceRequestTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AttendanceRequestType'>
+    
+
+
+  /**
+   * Reference to a field of type 'AttendanceRequestType[]'
+   */
+  export type ListEnumAttendanceRequestTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AttendanceRequestType[]'>
     
 
 
@@ -7472,7 +7528,7 @@ export namespace Prisma {
     OR?: MajorWhereInput[]
     NOT?: MajorWhereInput | MajorWhereInput[]
     id?: IntFilter<"Major"> | number
-    name?: StringFilter<"Major"> | string
+    name?: EnumMajorListFilter<"Major"> | $Enums.MajorList
     users?: UserListRelationFilter
   }
 
@@ -7484,7 +7540,7 @@ export namespace Prisma {
 
   export type MajorWhereUniqueInput = Prisma.AtLeast<{
     id?: number
-    name?: string
+    name?: $Enums.MajorList
     AND?: MajorWhereInput | MajorWhereInput[]
     OR?: MajorWhereInput[]
     NOT?: MajorWhereInput | MajorWhereInput[]
@@ -7506,7 +7562,7 @@ export namespace Prisma {
     OR?: MajorScalarWhereWithAggregatesInput[]
     NOT?: MajorScalarWhereWithAggregatesInput | MajorScalarWhereWithAggregatesInput[]
     id?: IntWithAggregatesFilter<"Major"> | number
-    name?: StringWithAggregatesFilter<"Major"> | string
+    name?: EnumMajorListWithAggregatesFilter<"Major"> | $Enums.MajorList
   }
 
   export type AttendanceWhereInput = {
@@ -7590,6 +7646,7 @@ export namespace Prisma {
     status?: EnumRequestStatusFilter<"AttendanceRequest"> | $Enums.RequestStatus
     requestedEventType?: EnumAttendanceStatusFilter<"AttendanceRequest"> | $Enums.AttendanceStatus
     requestedDate?: DateTimeFilter<"AttendanceRequest"> | Date | string
+    requestType?: EnumAttendanceRequestTypeFilter<"AttendanceRequest"> | $Enums.AttendanceRequestType
     reason?: StringNullableFilter<"AttendanceRequest"> | string | null
     createdAt?: DateTimeFilter<"AttendanceRequest"> | Date | string
     updatedAt?: DateTimeFilter<"AttendanceRequest"> | Date | string
@@ -7604,6 +7661,7 @@ export namespace Prisma {
     status?: SortOrder
     requestedEventType?: SortOrder
     requestedDate?: SortOrder
+    requestType?: SortOrder
     reason?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -7621,6 +7679,7 @@ export namespace Prisma {
     status?: EnumRequestStatusFilter<"AttendanceRequest"> | $Enums.RequestStatus
     requestedEventType?: EnumAttendanceStatusFilter<"AttendanceRequest"> | $Enums.AttendanceStatus
     requestedDate?: DateTimeFilter<"AttendanceRequest"> | Date | string
+    requestType?: EnumAttendanceRequestTypeFilter<"AttendanceRequest"> | $Enums.AttendanceRequestType
     reason?: StringNullableFilter<"AttendanceRequest"> | string | null
     createdAt?: DateTimeFilter<"AttendanceRequest"> | Date | string
     updatedAt?: DateTimeFilter<"AttendanceRequest"> | Date | string
@@ -7635,6 +7694,7 @@ export namespace Prisma {
     status?: SortOrder
     requestedEventType?: SortOrder
     requestedDate?: SortOrder
+    requestType?: SortOrder
     reason?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -7655,6 +7715,7 @@ export namespace Prisma {
     status?: EnumRequestStatusWithAggregatesFilter<"AttendanceRequest"> | $Enums.RequestStatus
     requestedEventType?: EnumAttendanceStatusWithAggregatesFilter<"AttendanceRequest"> | $Enums.AttendanceStatus
     requestedDate?: DateTimeWithAggregatesFilter<"AttendanceRequest"> | Date | string
+    requestType?: EnumAttendanceRequestTypeWithAggregatesFilter<"AttendanceRequest"> | $Enums.AttendanceRequestType
     reason?: StringNullableWithAggregatesFilter<"AttendanceRequest"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"AttendanceRequest"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"AttendanceRequest"> | Date | string
@@ -7784,39 +7845,39 @@ export namespace Prisma {
   }
 
   export type MajorCreateInput = {
-    name: string
+    name: $Enums.MajorList
     users?: UserCreateNestedManyWithoutMajorInput
   }
 
   export type MajorUncheckedCreateInput = {
     id?: number
-    name: string
+    name: $Enums.MajorList
     users?: UserUncheckedCreateNestedManyWithoutMajorInput
   }
 
   export type MajorUpdateInput = {
-    name?: StringFieldUpdateOperationsInput | string
+    name?: EnumMajorListFieldUpdateOperationsInput | $Enums.MajorList
     users?: UserUpdateManyWithoutMajorNestedInput
   }
 
   export type MajorUncheckedUpdateInput = {
     id?: IntFieldUpdateOperationsInput | number
-    name?: StringFieldUpdateOperationsInput | string
+    name?: EnumMajorListFieldUpdateOperationsInput | $Enums.MajorList
     users?: UserUncheckedUpdateManyWithoutMajorNestedInput
   }
 
   export type MajorCreateManyInput = {
     id?: number
-    name: string
+    name: $Enums.MajorList
   }
 
   export type MajorUpdateManyMutationInput = {
-    name?: StringFieldUpdateOperationsInput | string
+    name?: EnumMajorListFieldUpdateOperationsInput | $Enums.MajorList
   }
 
   export type MajorUncheckedUpdateManyInput = {
     id?: IntFieldUpdateOperationsInput | number
-    name?: StringFieldUpdateOperationsInput | string
+    name?: EnumMajorListFieldUpdateOperationsInput | $Enums.MajorList
   }
 
   export type AttendanceCreateInput = {
@@ -7893,6 +7954,7 @@ export namespace Prisma {
     status?: $Enums.RequestStatus
     requestedEventType: $Enums.AttendanceStatus
     requestedDate: Date | string
+    requestType: $Enums.AttendanceRequestType
     reason?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -7907,6 +7969,7 @@ export namespace Prisma {
     status?: $Enums.RequestStatus
     requestedEventType: $Enums.AttendanceStatus
     requestedDate: Date | string
+    requestType: $Enums.AttendanceRequestType
     reason?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -7916,6 +7979,7 @@ export namespace Prisma {
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     requestedEventType?: EnumAttendanceStatusFieldUpdateOperationsInput | $Enums.AttendanceStatus
     requestedDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestType?: EnumAttendanceRequestTypeFieldUpdateOperationsInput | $Enums.AttendanceRequestType
     reason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -7930,6 +7994,7 @@ export namespace Prisma {
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     requestedEventType?: EnumAttendanceStatusFieldUpdateOperationsInput | $Enums.AttendanceStatus
     requestedDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestType?: EnumAttendanceRequestTypeFieldUpdateOperationsInput | $Enums.AttendanceRequestType
     reason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -7942,6 +8007,7 @@ export namespace Prisma {
     status?: $Enums.RequestStatus
     requestedEventType: $Enums.AttendanceStatus
     requestedDate: Date | string
+    requestType: $Enums.AttendanceRequestType
     reason?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -7951,6 +8017,7 @@ export namespace Prisma {
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     requestedEventType?: EnumAttendanceStatusFieldUpdateOperationsInput | $Enums.AttendanceStatus
     requestedDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestType?: EnumAttendanceRequestTypeFieldUpdateOperationsInput | $Enums.AttendanceRequestType
     reason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -7963,6 +8030,7 @@ export namespace Prisma {
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     requestedEventType?: EnumAttendanceStatusFieldUpdateOperationsInput | $Enums.AttendanceStatus
     requestedDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestType?: EnumAttendanceRequestTypeFieldUpdateOperationsInput | $Enums.AttendanceRequestType
     reason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -8215,6 +8283,13 @@ export namespace Prisma {
     value?: SortOrder
   }
 
+  export type EnumMajorListFilter<$PrismaModel = never> = {
+    equals?: $Enums.MajorList | EnumMajorListFieldRefInput<$PrismaModel>
+    in?: $Enums.MajorList[] | ListEnumMajorListFieldRefInput<$PrismaModel>
+    notIn?: $Enums.MajorList[] | ListEnumMajorListFieldRefInput<$PrismaModel>
+    not?: NestedEnumMajorListFilter<$PrismaModel> | $Enums.MajorList
+  }
+
   export type MajorCountOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
@@ -8236,6 +8311,16 @@ export namespace Prisma {
 
   export type MajorSumOrderByAggregateInput = {
     id?: SortOrder
+  }
+
+  export type EnumMajorListWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.MajorList | EnumMajorListFieldRefInput<$PrismaModel>
+    in?: $Enums.MajorList[] | ListEnumMajorListFieldRefInput<$PrismaModel>
+    notIn?: $Enums.MajorList[] | ListEnumMajorListFieldRefInput<$PrismaModel>
+    not?: NestedEnumMajorListWithAggregatesFilter<$PrismaModel> | $Enums.MajorList
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumMajorListFilter<$PrismaModel>
+    _max?: NestedEnumMajorListFilter<$PrismaModel>
   }
 
   export type EnumAttendanceStatusFilter<$PrismaModel = never> = {
@@ -8345,6 +8430,13 @@ export namespace Prisma {
     not?: NestedEnumRequestStatusFilter<$PrismaModel> | $Enums.RequestStatus
   }
 
+  export type EnumAttendanceRequestTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.AttendanceRequestType | EnumAttendanceRequestTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.AttendanceRequestType[] | ListEnumAttendanceRequestTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.AttendanceRequestType[] | ListEnumAttendanceRequestTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumAttendanceRequestTypeFilter<$PrismaModel> | $Enums.AttendanceRequestType
+  }
+
   export type AttendanceNullableScalarRelationFilter = {
     is?: AttendanceWhereInput | null
     isNot?: AttendanceWhereInput | null
@@ -8357,6 +8449,7 @@ export namespace Prisma {
     status?: SortOrder
     requestedEventType?: SortOrder
     requestedDate?: SortOrder
+    requestType?: SortOrder
     reason?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -8375,6 +8468,7 @@ export namespace Prisma {
     status?: SortOrder
     requestedEventType?: SortOrder
     requestedDate?: SortOrder
+    requestType?: SortOrder
     reason?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -8387,6 +8481,7 @@ export namespace Prisma {
     status?: SortOrder
     requestedEventType?: SortOrder
     requestedDate?: SortOrder
+    requestType?: SortOrder
     reason?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -8406,6 +8501,16 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumRequestStatusFilter<$PrismaModel>
     _max?: NestedEnumRequestStatusFilter<$PrismaModel>
+  }
+
+  export type EnumAttendanceRequestTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.AttendanceRequestType | EnumAttendanceRequestTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.AttendanceRequestType[] | ListEnumAttendanceRequestTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.AttendanceRequestType[] | ListEnumAttendanceRequestTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumAttendanceRequestTypeWithAggregatesFilter<$PrismaModel> | $Enums.AttendanceRequestType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumAttendanceRequestTypeFilter<$PrismaModel>
+    _max?: NestedEnumAttendanceRequestTypeFilter<$PrismaModel>
   }
 
   export type GradeCreateNestedOneWithoutUsersInput = {
@@ -8608,6 +8713,10 @@ export namespace Prisma {
     connect?: UserWhereUniqueInput | UserWhereUniqueInput[]
   }
 
+  export type EnumMajorListFieldUpdateOperationsInput = {
+    set?: $Enums.MajorList
+  }
+
   export type UserUpdateManyWithoutMajorNestedInput = {
     create?: XOR<UserCreateWithoutMajorInput, UserUncheckedCreateWithoutMajorInput> | UserCreateWithoutMajorInput[] | UserUncheckedCreateWithoutMajorInput[]
     connectOrCreate?: UserCreateOrConnectWithoutMajorInput | UserCreateOrConnectWithoutMajorInput[]
@@ -8714,6 +8823,10 @@ export namespace Prisma {
 
   export type EnumRequestStatusFieldUpdateOperationsInput = {
     set?: $Enums.RequestStatus
+  }
+
+  export type EnumAttendanceRequestTypeFieldUpdateOperationsInput = {
+    set?: $Enums.AttendanceRequestType
   }
 
   export type AttendanceUpdateOneWithoutAttendanceRequestsNestedInput = {
@@ -8883,6 +8996,23 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
+  export type NestedEnumMajorListFilter<$PrismaModel = never> = {
+    equals?: $Enums.MajorList | EnumMajorListFieldRefInput<$PrismaModel>
+    in?: $Enums.MajorList[] | ListEnumMajorListFieldRefInput<$PrismaModel>
+    notIn?: $Enums.MajorList[] | ListEnumMajorListFieldRefInput<$PrismaModel>
+    not?: NestedEnumMajorListFilter<$PrismaModel> | $Enums.MajorList
+  }
+
+  export type NestedEnumMajorListWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.MajorList | EnumMajorListFieldRefInput<$PrismaModel>
+    in?: $Enums.MajorList[] | ListEnumMajorListFieldRefInput<$PrismaModel>
+    notIn?: $Enums.MajorList[] | ListEnumMajorListFieldRefInput<$PrismaModel>
+    not?: NestedEnumMajorListWithAggregatesFilter<$PrismaModel> | $Enums.MajorList
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumMajorListFilter<$PrismaModel>
+    _max?: NestedEnumMajorListFilter<$PrismaModel>
+  }
+
   export type NestedEnumAttendanceStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.AttendanceStatus | EnumAttendanceStatusFieldRefInput<$PrismaModel>
     in?: $Enums.AttendanceStatus[] | ListEnumAttendanceStatusFieldRefInput<$PrismaModel>
@@ -8938,6 +9068,13 @@ export namespace Prisma {
     not?: NestedEnumRequestStatusFilter<$PrismaModel> | $Enums.RequestStatus
   }
 
+  export type NestedEnumAttendanceRequestTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.AttendanceRequestType | EnumAttendanceRequestTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.AttendanceRequestType[] | ListEnumAttendanceRequestTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.AttendanceRequestType[] | ListEnumAttendanceRequestTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumAttendanceRequestTypeFilter<$PrismaModel> | $Enums.AttendanceRequestType
+  }
+
   export type NestedEnumRequestStatusWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.RequestStatus | EnumRequestStatusFieldRefInput<$PrismaModel>
     in?: $Enums.RequestStatus[] | ListEnumRequestStatusFieldRefInput<$PrismaModel>
@@ -8946,6 +9083,16 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumRequestStatusFilter<$PrismaModel>
     _max?: NestedEnumRequestStatusFilter<$PrismaModel>
+  }
+
+  export type NestedEnumAttendanceRequestTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.AttendanceRequestType | EnumAttendanceRequestTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.AttendanceRequestType[] | ListEnumAttendanceRequestTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.AttendanceRequestType[] | ListEnumAttendanceRequestTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumAttendanceRequestTypeWithAggregatesFilter<$PrismaModel> | $Enums.AttendanceRequestType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumAttendanceRequestTypeFilter<$PrismaModel>
+    _max?: NestedEnumAttendanceRequestTypeFilter<$PrismaModel>
   }
 
   export type GradeCreateWithoutUsersInput = {
@@ -8963,12 +9110,12 @@ export namespace Prisma {
   }
 
   export type MajorCreateWithoutUsersInput = {
-    name: string
+    name: $Enums.MajorList
   }
 
   export type MajorUncheckedCreateWithoutUsersInput = {
     id?: number
-    name: string
+    name: $Enums.MajorList
   }
 
   export type MajorCreateOrConnectWithoutUsersInput = {
@@ -9009,6 +9156,7 @@ export namespace Prisma {
     status?: $Enums.RequestStatus
     requestedEventType: $Enums.AttendanceStatus
     requestedDate: Date | string
+    requestType: $Enums.AttendanceRequestType
     reason?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -9021,6 +9169,7 @@ export namespace Prisma {
     status?: $Enums.RequestStatus
     requestedEventType: $Enums.AttendanceStatus
     requestedDate: Date | string
+    requestType: $Enums.AttendanceRequestType
     reason?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -9068,12 +9217,12 @@ export namespace Prisma {
   }
 
   export type MajorUpdateWithoutUsersInput = {
-    name?: StringFieldUpdateOperationsInput | string
+    name?: EnumMajorListFieldUpdateOperationsInput | $Enums.MajorList
   }
 
   export type MajorUncheckedUpdateWithoutUsersInput = {
     id?: IntFieldUpdateOperationsInput | number
-    name?: StringFieldUpdateOperationsInput | string
+    name?: EnumMajorListFieldUpdateOperationsInput | $Enums.MajorList
   }
 
   export type AttendanceUpsertWithWhereUniqueWithoutUserInput = {
@@ -9131,6 +9280,7 @@ export namespace Prisma {
     status?: EnumRequestStatusFilter<"AttendanceRequest"> | $Enums.RequestStatus
     requestedEventType?: EnumAttendanceStatusFilter<"AttendanceRequest"> | $Enums.AttendanceStatus
     requestedDate?: DateTimeFilter<"AttendanceRequest"> | Date | string
+    requestType?: EnumAttendanceRequestTypeFilter<"AttendanceRequest"> | $Enums.AttendanceRequestType
     reason?: StringNullableFilter<"AttendanceRequest"> | string | null
     createdAt?: DateTimeFilter<"AttendanceRequest"> | Date | string
     updatedAt?: DateTimeFilter<"AttendanceRequest"> | Date | string
@@ -9287,6 +9437,7 @@ export namespace Prisma {
     status?: $Enums.RequestStatus
     requestedEventType: $Enums.AttendanceStatus
     requestedDate: Date | string
+    requestType: $Enums.AttendanceRequestType
     reason?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -9299,6 +9450,7 @@ export namespace Prisma {
     status?: $Enums.RequestStatus
     requestedEventType: $Enums.AttendanceStatus
     requestedDate: Date | string
+    requestType: $Enums.AttendanceRequestType
     reason?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -9501,6 +9653,7 @@ export namespace Prisma {
     status?: $Enums.RequestStatus
     requestedEventType: $Enums.AttendanceStatus
     requestedDate: Date | string
+    requestType: $Enums.AttendanceRequestType
     reason?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -9538,6 +9691,7 @@ export namespace Prisma {
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     requestedEventType?: EnumAttendanceStatusFieldUpdateOperationsInput | $Enums.AttendanceStatus
     requestedDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestType?: EnumAttendanceRequestTypeFieldUpdateOperationsInput | $Enums.AttendanceRequestType
     reason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9550,6 +9704,7 @@ export namespace Prisma {
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     requestedEventType?: EnumAttendanceStatusFieldUpdateOperationsInput | $Enums.AttendanceStatus
     requestedDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestType?: EnumAttendanceRequestTypeFieldUpdateOperationsInput | $Enums.AttendanceRequestType
     reason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9561,6 +9716,7 @@ export namespace Prisma {
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     requestedEventType?: EnumAttendanceStatusFieldUpdateOperationsInput | $Enums.AttendanceStatus
     requestedDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestType?: EnumAttendanceRequestTypeFieldUpdateOperationsInput | $Enums.AttendanceRequestType
     reason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9666,6 +9822,7 @@ export namespace Prisma {
     status?: $Enums.RequestStatus
     requestedEventType: $Enums.AttendanceStatus
     requestedDate: Date | string
+    requestType: $Enums.AttendanceRequestType
     reason?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -9675,6 +9832,7 @@ export namespace Prisma {
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     requestedEventType?: EnumAttendanceStatusFieldUpdateOperationsInput | $Enums.AttendanceStatus
     requestedDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestType?: EnumAttendanceRequestTypeFieldUpdateOperationsInput | $Enums.AttendanceRequestType
     reason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9687,6 +9845,7 @@ export namespace Prisma {
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     requestedEventType?: EnumAttendanceStatusFieldUpdateOperationsInput | $Enums.AttendanceStatus
     requestedDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestType?: EnumAttendanceRequestTypeFieldUpdateOperationsInput | $Enums.AttendanceRequestType
     reason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9698,6 +9857,7 @@ export namespace Prisma {
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     requestedEventType?: EnumAttendanceStatusFieldUpdateOperationsInput | $Enums.AttendanceStatus
     requestedDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestType?: EnumAttendanceRequestTypeFieldUpdateOperationsInput | $Enums.AttendanceRequestType
     reason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string

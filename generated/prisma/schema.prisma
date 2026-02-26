@@ -2,9 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider        = "prisma-client-js"
-  output          = "../generated/prisma"
-  previewFeatures = ["driverAdapters"]
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -35,6 +34,13 @@ enum RequestStatus {
   REJECTED
 }
 
+enum MajorList {
+  PPLG
+  TJKT
+  DKV
+  AKUNTANSI
+}
+
 model User {
   id      Int    @id @default(autoincrement())
   clerkId String @unique
@@ -62,8 +68,8 @@ model Grade {
 }
 
 model Major {
-  id    Int    @id @default(autoincrement())
-  name  String @unique
+  id    Int       @id @default(autoincrement())
+  name  MajorList @unique
   users User[]
 }
 
@@ -98,10 +104,13 @@ model AttendanceRequest {
   studentId Int
   student   User @relation(fields: [studentId], references: [id])
 
-  status             RequestStatus    @default(PENDING)
+  status RequestStatus @default(PENDING)
+
   requestedEventType AttendanceStatus
   requestedDate      DateTime
-  reason             String?
+  requestType        AttendanceRequestType
+
+  reason String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
