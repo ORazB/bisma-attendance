@@ -8,7 +8,6 @@ import { Role, Prisma } from "@/generated/prisma";
 
 import { z } from "zod";
 
-
 const registerSchema = z.object({
   email: z.email("Invalid email address"),
   username: z

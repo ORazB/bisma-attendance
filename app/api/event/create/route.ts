@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 
+import { AttendanceRequestType } from "@/generated/prisma";
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -39,12 +41,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Invalid event type" }, { status: 400 });
     }
 
-    // ==============================
-    // ===== ADMIN LOGIC ============
-    // ==============================
     if (user.role === "ADMIN") {
 
-      if (requestType === "CREATE") {
+      if (requestType === AttendanceRequestType.CREATE) {
         const existingEvent = await prisma.attendance.findUnique({
           where: {
             userId_date: {
@@ -69,7 +68,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ message: "Attendance created", event: newEvent }, { status: 201 });
       }
 
-      if (requestType === "UPDATE") {
+      if (requestType === AttendanceRequestType.UPDATE) {
         if (!attendanceId) {
           return NextResponse.json({ message: "Missing attendanceId" }, { status: 400 });
         }
@@ -82,7 +81,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ message: "Attendance updated", event: updated });
       }
 
-      if (requestType === "DELETE") {
+      if (requestType === AttendanceRequestType.DELETE) {
         if (!attendanceId) {
           return NextResponse.json({ message: "Missing attendanceId" }, { status: 400 });
         }
@@ -120,7 +119,7 @@ export async function POST(request: NextRequest) {
       }
 
       // CREATE or UPDATE request
-      if (requestType === "CREATE" || requestType === "UPDATE") {
+      if (requestType === AttendanceRequestType.CREATE || requestType === AttendanceRequestType.UPDATE) {
         const newRequest = await prisma.attendanceRequest.create({
           data: {
             attendanceId: attendanceId ?? null,
@@ -140,7 +139,7 @@ export async function POST(request: NextRequest) {
       }
 
       // DELETE request
-      if (requestType === "DELETE") {
+      if (requestType === AttendanceRequestType.DELETE) {
         if (!attendanceId) {
           return NextResponse.json({ message: "Missing attendanceId" }, { status: 400 });
         }
@@ -150,10 +149,10 @@ export async function POST(request: NextRequest) {
             attendanceId,
             studentId: user.id,
             requestedEventType: eventType,
-            requestType: requestType,
             requestedDate: normalizedDate,
             status: "PENDING",
-            reason: reason || "Delete request"
+            reason: reason || "Delete request",
+            requestType: AttendanceRequestType.DELETE,
           }
         });
 
