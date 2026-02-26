@@ -9,31 +9,41 @@ export default async function Home() {
   if (!userId) return redirect("/login");
 
   const user = await prisma.user.findUnique({
-    where: { clerkId: userId }
+    where: { clerkId: userId },
   });
+
+  const role = (sessionClaims as { role?: string })?.role;
 
   if (!user) return redirect("/login");
 
-  if (user.role === "USER") {
+  if (role === "USER") {
     const userAttendance = await prisma.attendance.findMany({
-      where: { userId: user.id }
+      where: { userId: user.id },
     });
 
     return <MainPage userRole={user.role} userAttendance={userAttendance} />;
+  } else if (role === "ADMIN") {
+    const userAttendance = await prisma.attendance.findMany();
+    const users = await prisma.user.findMany();
+
+    const userImageMap: Record<string, string> = {};
+    const clerkIds = users.map((u) => u.clerkId);
+    const client = await clerkClient();
+    const response = await client.users.getUserList({
+      userId: clerkIds,
+    });
+
+    response.data.forEach((clerkUser) => {
+      userImageMap[clerkUser.id] = clerkUser.imageUrl;
+    });
+    return (
+      <AdminPage
+        userAttendance={userAttendance}
+        users={users}
+        userImages={userImageMap}
+      />
+    );
+  } else {
+    return <div>Invalid Role</div>
   }
-
-  const userAttendance = await prisma.attendance.findMany();
-  const users = await prisma.user.findMany();
-
-  const userImageMap: Record<string, string> = {};
-  const clerkIds = users.map(u => u.clerkId);
-  const client = await clerkClient();
-  const response = await client.users.getUserList({
-    userId: clerkIds,
-  });
-
-  response.data.forEach(clerkUser => {
-    userImageMap[clerkUser.id] = clerkUser.imageUrl;
-  });
-  return <AdminPage userAttendance={userAttendance} users={users} userImages={userImageMap} />;
 }
