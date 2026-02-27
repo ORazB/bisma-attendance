@@ -1,61 +1,81 @@
 "use client";
 
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 import type { AttendanceRequest } from "@/generated/prisma";
 
-import { SignedIn, UserButton } from '@clerk/nextjs';
+import { SignedIn, UserButton } from "@clerk/nextjs";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function Header({ userAttendanceRequests }: { userAttendanceRequests: AttendanceRequest[] }) {
-
-  const dialogCloseRef = useRef<HTMLButtonElement>(null);
+export default function Header({
+  userAttendanceRequests,
+  isAdmin,
+}: {
+  userAttendanceRequests: AttendanceRequest[];
+  isAdmin: boolean;
+}) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [openDialogId, setOpenDialogId] = useState<number | null>(null);
 
   async function handleApprove(requestId: number) {
+    setIsLoading(true);
     try {
-      const response = await fetch(`/api/attendance-request/approve?id=${requestId}`, {
-        method: "POST",
-      });
+      const response = await fetch(
+        `/api/attendance-request/approve?id=${requestId}`,
+        {
+          method: "POST",
+        },
+      );
 
       if (response.ok) {
         toast.success("Attendance request approved successfully");
       } else {
         toast.error("Failed to approve attendance request");
       }
-
     } catch (error) {
       console.error("Error approving attendance request:", error);
     } finally {
       setIsLoading(false);
-      dialogCloseRef.current?.click();
+      setOpenDialogId(null);
       router.refresh();
     }
   }
 
   async function handleReject(requestId: number) {
+    setIsLoading(true);
     try {
-      const response = await fetch(`/api/attendance-request/reject?id=${requestId}`, {
-        method: "POST",
-      });
+      const response = await fetch(
+        `/api/attendance-request/reject?id=${requestId}`,
+        {
+          method: "POST",
+        },
+      );
 
       if (response.ok) {
         toast.success("Attendance request rejected successfully");
       } else {
         toast.error("Failed to reject attendance request");
       }
-
     } catch (error) {
       console.error("Error rejecting attendance request:", error);
     } finally {
       setIsLoading(false);
-      dialogCloseRef.current?.click();
+      setOpenDialogId(null);
       router.refresh();
     }
   }
@@ -71,46 +91,54 @@ export default function Header({ userAttendanceRequests }: { userAttendanceReque
           <PopoverContent className="w-80">
             {userAttendanceRequests.length > 0 ? (
               <div className="space-y-3">
-                {userAttendanceRequests.map((request, index) => (
-                  <Dialog key={index}>
+                {userAttendanceRequests.map((request) => (
+                  <Dialog
+                    key={request.id}
+                    open={openDialogId === request.id}
+                    onOpenChange={(open) =>
+                      setOpenDialogId(open ? request.id : null)
+                    }
+                  >
                     <DialogTrigger asChild>
-                      <div
-                        className="border-l-4 border-primary pl-4 py-2 hover:bg-primary/5 transition-colors"
-                      >
+                      <div className="border-l-4 border-primary pl-4 py-2 hover:bg-primary/5 transition-colors cursor-pointer">
                         <div className="flex items-center gap-2 mb-2">
                           <i className="fas fa-calendar-day text-primary"></i>
                           <span className="font-semibold text-sm">
-                            {new Date(request.requestedDate).toLocaleDateString()}
+                            {new Date(
+                              request.requestedDate,
+                            ).toLocaleDateString()}
                           </span>
                         </div>
 
                         <div className="flex items-center gap-2 mb-1">
-                          <i className={`fas ${request.status === 'PENDING' ? 'fa-clock' : 'fa-times-circle'} text-primary text-xs`}></i>
+                          <i
+                            className={`fas ${request.status === "PENDING" ? "fa-clock" : "fa-times-circle"} text-primary text-xs`}
+                          ></i>
                           <span className="text-xs capitalize font-medium">
                             {request.status}
                           </span>
                         </div>
-                        
+
                         <div className="flex items-center gap-2 mb-1">
                           <i className="fas fa-exchange-alt text-primary text-xs"></i>
                           <span className="text-xs font-medium">
                             {request.requestType}
                           </span>
                         </div>
-                        
                       </div>
                     </DialogTrigger>
                     <DialogContent className="w-64">
                       <DialogTitle>Attendance Request</DialogTitle>
                       <div className="space-y-2">
-
                         <div className="flex items-center gap-2 mb-2">
                           <i className="fas fa-calendar-day text-primary"></i>
                           <span className="font-semibold text-sm">
-                            {new Date(request.requestedDate).toLocaleDateString()}
+                            {new Date(
+                              request.requestedDate,
+                            ).toLocaleDateString()}
                           </span>
                         </div>
-                        
+
                         <div className="flex items-center gap-2 mb-2">
                           <i className="fas fa-random text-primary"></i>
                           <span className="font-semibold text-sm">
@@ -134,18 +162,26 @@ export default function Header({ userAttendanceRequests }: { userAttendanceReque
                           </div>
                         )}
 
-                        <div className="flex justify-end gap-2 mt-2">
-                          <DialogClose asChild ref={dialogCloseRef}>
-                            <Button onClick={() => handleApprove(request.id)} size="sm" className="bg-primary hover:bg-primary/90">
+                        {isAdmin && (
+                          <div className="flex justify-end gap-2 mt-2">
+                            <Button
+                              onClick={() => handleApprove(request.id)}
+                              size="sm"
+                              className="bg-primary hover:bg-primary/90"
+                              disabled={isLoading}
+                            >
                               {isLoading ? "Approving..." : "Approve"}
                             </Button>
-                          </DialogClose>
-                          <DialogClose asChild ref={dialogCloseRef}>
-                            <Button onClick={() => handleReject(request.id)} variant="outline" size="sm">
+                            <Button
+                              onClick={() => handleReject(request.id)}
+                              variant="outline"
+                              size="sm"
+                              disabled={isLoading}
+                            >
                               {isLoading ? "Rejecting..." : "Reject"}
                             </Button>
-                          </DialogClose>
-                        </div>
+                          </div>
+                        )}
                       </div>
                     </DialogContent>
                   </Dialog>
@@ -154,7 +190,9 @@ export default function Header({ userAttendanceRequests }: { userAttendanceReque
             ) : (
               <div className="text-center py-8">
                 <i className="fas fa-inbox text-primary text-4xl mb-3 opacity-50"></i>
-                <p className="text-sm text-muted-foreground">No attendance requests</p>
+                <p className="text-sm text-muted-foreground">
+                  No attendance requests
+                </p>
               </div>
             )}
           </PopoverContent>
@@ -166,5 +204,5 @@ export default function Header({ userAttendanceRequests }: { userAttendanceReque
         </SignedIn>
       </div>
     </header>
-  )
+  );
 }
