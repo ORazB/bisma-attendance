@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { attendanceId, requestType, date, eventType, reason } = body;
-    
+
     console.log(requestType);
 
     const { userId } = await auth();
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { clerkId: userId }
+      where: { clerkId: userId },
     });
 
     if (!user) {
@@ -28,77 +28,92 @@ export async function POST(request: NextRequest) {
     let normalizedDate: Date | null = null;
     if (date) {
       const parsedDate = new Date(date);
-      normalizedDate = new Date(Date.UTC(
-        parsedDate.getUTCFullYear(),
-        parsedDate.getUTCMonth(),
-        parsedDate.getUTCDate(),
-        0, 0, 0, 0
-      ));
+      normalizedDate = new Date(
+        Date.UTC(
+          parsedDate.getUTCFullYear(),
+          parsedDate.getUTCMonth(),
+          parsedDate.getUTCDate(),
+          0,
+          0,
+          0,
+          0,
+        ),
+      );
     }
 
-    const validStatuses = ['ON_TIME', 'ON_LEAVE', 'LATE', 'ABSENT'];
+    const validStatuses = ["ON_TIME", "ON_LEAVE", "LATE", "ABSENT"];
     if (eventType && !validStatuses.includes(eventType)) {
-      return NextResponse.json({ message: "Invalid event type" }, { status: 400 });
+      return NextResponse.json(
+        { message: "Invalid event type" },
+        { status: 400 },
+      );
     }
 
     if (user.role === "ADMIN") {
-
       if (requestType === AttendanceRequestType.CREATE) {
-        const existingEvent = await prisma.attendance.findUnique({
+        const existingEvent = await prisma.attendance.findFirst({
           where: {
-            userId_date: {
-              userId: user.id,
-              date: normalizedDate!
-            }
-          }
+            OR: [{ userId: user.id }, { date: normalizedDate! }],
+          },
         });
 
         if (existingEvent) {
-          return NextResponse.json({ message: "Attendance already exists" }, { status: 400 });
+          return NextResponse.json(
+            { message: "Attendance already exists" },
+            { status: 400 },
+          );
         }
 
         const newEvent = await prisma.attendance.create({
           data: {
             userId: user.id,
             status: eventType,
-            date: normalizedDate!
-          }
+            date: normalizedDate!,
+          },
         });
 
-        return NextResponse.json({ message: "Attendance created", event: newEvent }, { status: 201 });
+        return NextResponse.json(
+          { message: "Attendance created", event: newEvent },
+          { status: 201 },
+        );
       }
 
       if (requestType === AttendanceRequestType.UPDATE) {
         if (!attendanceId) {
-          return NextResponse.json({ message: "Missing attendanceId" }, { status: 400 });
+          return NextResponse.json(
+            { message: "Missing attendanceId" },
+            { status: 400 },
+          );
         }
 
         const updated = await prisma.attendance.update({
           where: { id: attendanceId },
-          data: { status: eventType }
+          data: { status: eventType },
         });
 
-        return NextResponse.json({ message: "Attendance updated", event: updated });
+        return NextResponse.json({
+          message: "Attendance updated",
+          event: updated,
+        });
       }
 
       if (requestType === AttendanceRequestType.DELETE) {
         if (!attendanceId) {
-          return NextResponse.json({ message: "Missing attendanceId" }, { status: 400 });
+          return NextResponse.json(
+            { message: "Missing attendanceId" },
+            { status: 400 },
+          );
         }
 
         await prisma.attendance.delete({
-          where: { id: attendanceId }
+          where: { id: attendanceId },
         });
 
         return NextResponse.json({ message: "Attendance deleted" });
       }
     }
 
-    // ==============================
-    // ===== USER (STUDENT) LOGIC ===
-    // ==============================
     if (user.role === "USER") {
-
       if (!normalizedDate) {
         return NextResponse.json({ message: "Date required" }, { status: 400 });
       }
@@ -106,20 +121,25 @@ export async function POST(request: NextRequest) {
       // Prevent duplicate pending request
       const existingRequest = await prisma.attendanceRequest.findFirst({
         where: {
-          studentId: user.id,
-          requestedDate: normalizedDate,
-          status: "PENDING"
-        }
+          status: "PENDING",
+          OR: [{ studentId: user.id }, { requestedDate: normalizedDate }],
+        },
       });
 
       if (existingRequest) {
-        return NextResponse.json({
-          message: "You already have a pending request for this date"
-        }, { status: 400 });
+        return NextResponse.json(
+          {
+            message: "You already have a pending request",
+          },
+          { status: 400 },
+        );
       }
 
       // CREATE or UPDATE request
-      if (requestType === AttendanceRequestType.CREATE || requestType === AttendanceRequestType.UPDATE) {
+      if (
+        requestType === AttendanceRequestType.CREATE ||
+        requestType === AttendanceRequestType.UPDATE
+      ) {
         const newRequest = await prisma.attendanceRequest.create({
           data: {
             attendanceId: attendanceId ?? null,
@@ -128,20 +148,26 @@ export async function POST(request: NextRequest) {
             requestType: requestType,
             requestedDate: normalizedDate,
             status: "PENDING",
-            reason: reason || ""
-          }
+            reason: reason || "",
+          },
         });
 
-        return NextResponse.json({
-          message: "Request submitted successfully",
-          request: newRequest
-        }, { status: 201 });
+        return NextResponse.json(
+          {
+            message: "Request submitted successfully",
+            request: newRequest,
+          },
+          { status: 201 },
+        );
       }
 
       // DELETE request
       if (requestType === AttendanceRequestType.DELETE) {
         if (!attendanceId) {
-          return NextResponse.json({ message: "Missing attendanceId" }, { status: 400 });
+          return NextResponse.json(
+            { message: "Missing attendanceId" },
+            { status: 400 },
+          );
         }
 
         const deleteRequest = await prisma.attendanceRequest.create({
@@ -153,22 +179,27 @@ export async function POST(request: NextRequest) {
             status: "PENDING",
             reason: reason || "Delete request",
             requestType: AttendanceRequestType.DELETE,
-          }
+          },
         });
 
-        return NextResponse.json({
-          message: "Delete request submitted",
-          request: deleteRequest
-        }, { status: 201 });
+        return NextResponse.json(
+          {
+            message: "Delete request submitted",
+            request: deleteRequest,
+          },
+          { status: 201 },
+        );
       }
     }
 
     return NextResponse.json({ message: "Invalid role" }, { status: 400 });
-
   } catch (error) {
     console.error("Error handling attendance:", error);
-    return NextResponse.json({
-      message: "Internal Server Error"
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        message: "Internal Server Error",
+      },
+      { status: 500 },
+    );
   }
 }
