@@ -8,10 +8,7 @@ import prisma from "@/lib/prisma";
 import { Toaster } from "@/components/ui/sonner"
 
 import Script from "next/script";
-import { NextResponse } from "next/server";
 import Header from "@/components/Landing/Header";
-
-import { redirect } from "next/navigation";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -70,7 +67,7 @@ export default async function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
           {userAttendanceRequests && (
-            <Header userAttendanceRequests={userAttendanceRequests} />
+            <Header userAttendanceRequests={userAttendanceRequests} isAdmin={user?.role === 'ADMIN'} />
           )}
           {children}
           <Toaster />
