@@ -25,7 +25,10 @@ export default async function Home() {
   } else if (role === "ADMIN") {
     const userAttendance = await prisma.attendance.findMany();
     const users = await prisma.user.findMany();
+    const grades = await prisma.grade.findMany();
+    const majors = await prisma.major.findMany();
 
+    
     const userImageMap: Record<string, string> = {};
     const clerkIds = users.map((u) => u.clerkId);
     const client = await clerkClient();
@@ -41,6 +44,8 @@ export default async function Home() {
         userAttendance={userAttendance}
         users={users}
         userImages={userImageMap}
+        grades={grades}
+        majors={majors}
       />
     );
   } else {
