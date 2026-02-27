@@ -34,6 +34,8 @@ import {
   endOfMonth,
   eachDayOfInterval,
   getDay,
+  isWithinInterval,
+  subMonths,
 } from "date-fns";
 
 import { useState, useRef, useMemo } from "react";
@@ -50,18 +52,51 @@ interface MainPageProps {
   userAttendance: Attendance[];
 }
 
+type Stats = { present: number; late: number; onLeave: number; absent: number };
+
+function getStatsForInterval(
+  attendance: Attendance[],
+  from: Date,
+  to: Date,
+): Stats {
+  const counts: Stats = { present: 0, late: 0, onLeave: 0, absent: 0 };
+  attendance
+    .filter((a) => isWithinInterval(new Date(a.date), { start: from, end: to }))
+    .forEach((a) => {
+      if (a.status === "ON_TIME") counts.present++;
+      else if (a.status === "LATE") counts.late++;
+      else if (a.status === "ON_LEAVE") counts.onLeave++;
+      else if (a.status === "ABSENT") counts.absent++;
+    });
+  return counts;
+}
+
+function computeTrend(
+  curr: number,
+  prev: number,
+): { label: string; direction: "up" | "down" | "stable" } {
+  if (prev === 0 && curr === 0) return { label: "Stable", direction: "stable" };
+  if (prev === 0) return { label: "New", direction: "up" };
+
+  const pct = Math.round(((curr - prev) / prev) * 100);
+  if (pct === 0) return { label: "Stable", direction: "stable" };
+  if (pct > 0) return { label: `${pct}%`, direction: "up" };
+  return { label: `${Math.abs(pct)}%`, direction: "down" };
+}
+
 export default function MainPage({
   userRole,
   userAttendance = [],
 }: MainPageProps) {
   const [date, setDate] = useState<Date | undefined>(new Date());
-  
+
   const [eventType, setEventType] = useState<string>("");
   const [reason, setReason] = useState<string>("");
-  
+
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [selectedAttendance, setSelectedAttendance] = useState<Attendance | null>(null);
-  
+  const [selectedAttendance, setSelectedAttendance] =
+    useState<Attendance | null>(null);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
 
@@ -79,25 +114,43 @@ export default function MainPage({
     return map;
   }, [userAttendance]);
 
-  const stats = useMemo(() => {
-    const counts = { present: 0, late: 0, onLeave: 0, absent: 0 };
-    userAttendance.forEach((a) => {
-      if (a.status === "ON_TIME") counts.present++;
-      else if (a.status === "LATE") counts.late++;
-      else if (a.status === "ON_LEAVE") counts.onLeave++;
-      else if (a.status === "ABSENT") counts.absent++;
-    });
-    return counts;
-  }, [userAttendance]);
+  const stats = useMemo<Stats>(() => {
+    if (!date) return { present: 0, late: 0, onLeave: 0, absent: 0 };
+    return getStatsForInterval(
+      userAttendance,
+      startOfMonth(date),
+      endOfMonth(date),
+    );
+  }, [date, userAttendance]);
+
+  const prevStats = useMemo<Stats>(() => {
+    if (!date) return { present: 0, late: 0, onLeave: 0, absent: 0 };
+    const prevMonth = subMonths(date, 1);
+    return getStatsForInterval(
+      userAttendance,
+      startOfMonth(prevMonth),
+      endOfMonth(prevMonth),
+    );
+  }, [date, userAttendance]);
+
+  const trends = useMemo(
+    () => ({
+      present: computeTrend(stats.present, prevStats.present),
+      late: computeTrend(stats.late, prevStats.late),
+      onLeave: computeTrend(stats.onLeave, prevStats.onLeave),
+      absent: computeTrend(stats.absent, prevStats.absent),
+    }),
+    [stats, prevStats],
+  );
 
   const calendarDays = useMemo(() => {
     if (!date) return [];
     const monthStart = startOfMonth(date);
     const monthEnd = endOfMonth(date);
-    
+
     let startDay = getDay(monthStart);
     startDay = startDay === 0 ? 6 : startDay - 1;
-    
+
     return [
       ...Array(startDay).fill(null),
       ...eachDayOfInterval({ start: monthStart, end: monthEnd }),
@@ -118,11 +171,11 @@ export default function MainPage({
       toast.error("Please select a date");
       return;
     }
-    
+
     if (eventType === "ON_LEAVE" && (!reason || reason.length < 8)) {
       newErrors.reason = "Your reason must be at least 8 characters";
     }
-    
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setIsLoading(false);
@@ -134,19 +187,24 @@ export default function MainPage({
 
     try {
       const isEdit = !!selectedAttendance;
-      
+
       const response = await fetch("/api/event/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           attendanceId: selectedAttendance?.id ?? null,
           requestType: isEdit ? "UPDATE" : "CREATE",
-          date: selectedDate.toISOString(),
+          date: new Date(
+            Date.UTC(
+              selectedDate.getFullYear(),
+              selectedDate.getMonth(),
+              selectedDate.getDate(),
+            ),
+          ).toISOString(),
           eventType,
           reason: reason || "",
         }),
       });
-      
 
       const data = await response.json();
 
@@ -160,10 +218,8 @@ export default function MainPage({
         setEventType("");
         setReason("");
         setSelectedDate(undefined);
-        
+
         dialogCloseRef.current?.click();
-        router.refresh();
-        
       } else {
         toast.error(data.message || errorMessage);
         setErrors({ submit: data.message ?? errorMessage });
@@ -171,10 +227,10 @@ export default function MainPage({
     } catch (error) {
       console.error("Full error:", error);
       toast.error(errorMessage);
-      
       setErrors({ submit: errorMessage });
     } finally {
       setIsLoading(false);
+      router.refresh();
     }
   }
 
@@ -182,7 +238,7 @@ export default function MainPage({
     if (!selectedAttendance) return;
     try {
       setIsLoading(true);
-      
+
       const response = await fetch("/api/event/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -194,9 +250,9 @@ export default function MainPage({
           reason: "Delete request",
         }),
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
         toast.success(data.message || "Delete request submitted");
         dialogCloseRef.current?.click();
@@ -226,39 +282,37 @@ export default function MainPage({
           </div>
         </div>
 
-        {/* Stat Cards — same grid as admin */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <StatCard
             icon="fa-clock"
             label="Present"
             value={stats.present}
-            trend={{ label: "12%", direction: "up" }}
+            trend={trends.present}
             week={false}
           />
           <StatCard
             icon="fa-hourglass-end"
             label="Late Entry"
             value={stats.late}
-            trend={{ label: "2%", direction: "up" }}
+            trend={trends.late}
             week={false}
           />
           <StatCard
             icon="fa-calendar-check"
             label="On Leave"
             value={stats.onLeave}
-            trend={{ label: "Stable", direction: "stable" }}
+            trend={trends.onLeave}
             week={false}
           />
           <StatCard
             icon="fa-user-minus"
             label="Absent"
             value={stats.absent}
-            trend={{ label: "4%", direction: "down" }}
+            trend={trends.absent}
             week={false}
           />
         </div>
 
-        {/* Month Picker */}
         <Popover>
           <PopoverTrigger asChild>
             <Button
